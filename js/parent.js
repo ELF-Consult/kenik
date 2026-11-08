@@ -157,7 +157,8 @@
 
   /* ---------- opdrachten ---------- */
   function renderTasks() {
-    const box = $("ptab-tasks"); box.innerHTML = "";
+    const root = $("ptab-tasks"); root.innerHTML = ""; root.className = "stack ptab";
+    const box = el("div", "card stack"); root.appendChild(box);
     box.appendChild(el("h3", null, "Nieuwe opdracht"));
     box.appendChild(el("p", "muted small", "Een opdracht verschijnt bovenaan op het startscherm van het kind. De instellingen liggen vast; afwerken levert de bonus op."));
     const kids = S().children;
@@ -187,16 +188,19 @@
       S().tasks.push({ id: OK.uid(), child: row1.querySelector("#t-child").value, module: m.id, config: cfg, mode: row1.querySelector("#t-mode").value, count: +row2.querySelector("#t-count").value, due: row2.querySelector("#t-due").value || null, bonus: +row2.querySelector("#t-bonus").value || 0, status: "open", created: OK.nowISO() });
       OK.save(); msg.textContent = "Opdracht staat klaar."; renderTasks();
     });
-    box.appendChild(el("h3", null, "Open opdrachten"));
-    const open = el("div", "list"); const openT = S().tasks.filter(t => t.status === "open");
+    const cardOpen = el("div", "card stack"); root.appendChild(cardOpen);
+    const openT = S().tasks.filter(t => t.status === "open");
+    cardOpen.appendChild(el("div", "q-head", `<h3>Open opdrachten</h3><span class="muted small">${openT.length}</span>`));
+    const open = el("div", "list");
     if (!openT.length) open.appendChild(el("p", "muted small", "Geen open opdrachten."));
     openT.forEach(t => { const m = OK.modules[t.module]; const d = el("div", "item", `<span><strong>${esc(OK.childName(t.child))}</strong>: ${m ? m.name : t.module}${t.mode === "test" ? " (toets)" : ""} <span class="muted">${m && m.describe ? m.describe(t.config || {}, { child: OK.childById(t.child) || kids[0] || { id: "x" } }) : ""}</span><br><span class="muted small">${t.due ? "tegen " + OK.fmtDate(t.due) : "geen deadline"}${t.bonus ? " · bonus " + t.bonus : ""}</span></span>`); const x = el("button", "x", "✕"); x.type = "button"; x.title = "Intrekken"; x.addEventListener("click", () => { S().tasks = S().tasks.filter(q => q !== t); OK.save(); renderTasks(); }); d.appendChild(x); open.appendChild(d); });
-    box.appendChild(open);
-    box.appendChild(el("h3", null, "Afgewerkt"));
+    cardOpen.appendChild(open);
+    const cardDone = el("div", "card stack"); root.appendChild(cardDone);
+    cardDone.appendChild(el("h3", null, "Afgewerkt"));
     const done = el("div", "list"); const doneT = S().tasks.filter(t => t.status === "done").sort((a, b) => b.doneAt.localeCompare(a.doneAt)).slice(0, 20);
     if (!doneT.length) done.appendChild(el("p", "muted small", "Nog niets afgewerkt."));
     doneT.forEach(t => { const m = OK.modules[t.module]; done.appendChild(el("div", "item", `<span><strong>${esc(OK.childName(t.doneBy || t.child))}</strong>: ${m ? m.name : t.module}${t.mode === "test" ? " (toets)" : ""}</span><span class="tag good">${t.score} · ${OK.fmtDate(t.doneAt)}</span>`)); });
-    box.appendChild(done);
+    cardDone.appendChild(done);
   }
 
   /* ---------- aanvragen en geschiedenis ---------- */
