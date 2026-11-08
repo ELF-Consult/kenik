@@ -84,14 +84,14 @@
     if (!S().children.length) list.appendChild(el("p", "muted small", "Nog geen kinderen."));
     box.appendChild(list);
     // nieuw kind
-    const add = el("div", "row", `<label class="f">Voornaam<input type="text" id="k-name"></label><label class="f" style="max-width:180px">Leerjaar<select id="k-grade">${GRADES.map(g => `<option value="${g[0]}" ${g[0] === 4 ? "selected" : ""}>${g[1]}</option>`).join("")}</select></label><label class="f" style="max-width:260px">Stijl<select id="k-style"><option value="tuin">Wereld: verzamelen</option><option value="kist">Schatkist: plumkes en winkel</option></select></label>`);
+    const add = el("div", "row", `<label class="f">Voornaam<input type="text" id="k-name"></label><label class="f" style="max-width:180px">Leerjaar<select id="k-grade">${GRADES.map(g => `<option value="${g[0]}" ${g[0] === 4 ? "selected" : ""}>${g[1]}</option>`).join("")}</select></label><label class="f" style="max-width:260px">Stijl<select id="k-style"><option value="tuin">Wereld: verzamelen</option><option value="kist">Schatkist: coins en winkel</option></select></label>`);
     const addBtn = el("button", "btn", "Kind toevoegen"); addBtn.type = "button"; add.appendChild(addBtn); box.appendChild(el("h3", null, "Nieuw kind")); box.appendChild(add);
     addBtn.addEventListener("click", () => { const n = $("k-name").value.trim(); if (!n) return; const g = +$("k-grade").value, st = $("k-style").value; const c = OK.addChild(n, g, { style: st, variant: "hondjes" }); editing = c.id; renderKids(); });
   }
   function childEditor(c) {
     const wrap = el("div", "stack");
     const head = el("div", "q-head"); head.appendChild(el("h3", null, `Instellingen voor ${esc(c.name)}`)); const back = el("button", "btn ghost", "Terug naar overzicht"); back.type = "button"; back.addEventListener("click", () => { editing = null; renderKids(); }); head.appendChild(back); wrap.appendChild(head);
-    const basics = el("div", "row", `<label class="f">Voornaam<input type="text" id="e-name" value="${esc(c.name)}"></label><label class="f" style="max-width:180px">Leerjaar<select id="e-grade">${GRADES.map(g => `<option value="${g[0]}" ${g[0] === c.grade ? "selected" : ""}>${g[1]}</option>`).join("")}</select></label><label class="f" style="max-width:260px">Stijl<select id="e-style"><option value="tuin" ${c.theme.style === "tuin" ? "selected" : ""}>Wereld: verzamelen</option><option value="kist" ${c.theme.style === "kist" ? "selected" : ""}>Schatkist: plumkes en winkel</option></select></label>`);
+    const basics = el("div", "row", `<label class="f">Voornaam<input type="text" id="e-name" value="${esc(c.name)}"></label><label class="f" style="max-width:180px">Leerjaar<select id="e-grade">${GRADES.map(g => `<option value="${g[0]}" ${g[0] === c.grade ? "selected" : ""}>${g[1]}</option>`).join("")}</select></label><label class="f" style="max-width:260px">Stijl<select id="e-style"><option value="tuin" ${c.theme.style === "tuin" ? "selected" : ""}>Wereld: verzamelen</option><option value="kist" ${c.theme.style === "kist" ? "selected" : ""}>Schatkist: coins en winkel</option></select></label>`);
     wrap.appendChild(basics);
     // icoontje: zo zie je in één oogopslag op wiens account je zit
     let avatar = c.avatar || "";
@@ -155,7 +155,7 @@
     const row1 = el("div", "row", `<label class="f">Voor wie<select id="t-child"><option value="all">Iedereen</option>${kids.map(k => `<option value="${k.id}" ${k.id === S().current ? "selected" : ""}>${esc(k.name)}</option>`).join("")}</select></label><label class="f">Welke oefening (klap open voor alle vakken)<select id="t-module"></select></label><label class="f" style="max-width:200px">Vorm<select id="t-mode"><option value="practice">Oefenen</option><option value="test">Toets</option></select></label>`);
     box.appendChild(row1);
     const fields = el("div", "stack"); box.appendChild(fields);
-    const row2 = el("div", "row", `<label class="f" id="t-count-wrap" style="max-width:160px">Aantal vragen<select id="t-count"><option>10</option><option selected>15</option><option>20</option><option>30</option></select></label><label class="f" style="max-width:180px">Tegen wanneer<input type="date" id="t-due"></label><label class="f" style="max-width:140px">Bonus (plumkes)<input type="number" id="t-bonus" min="0" value="50"></label>`);
+    const row2 = el("div", "row", `<label class="f" id="t-count-wrap" style="max-width:160px">Aantal vragen<select id="t-count"><option>10</option><option selected>15</option><option>20</option><option>30</option></select></label><label class="f" style="max-width:180px">Tegen wanneer<input type="date" id="t-due"></label><label class="f" style="max-width:140px">Bonus (coins)<input type="number" id="t-bonus" min="0" value="50"></label>`);
     const addBtn = el("button", "btn", "Opdracht geven"); addBtn.type = "button"; row2.appendChild(addBtn); box.appendChild(row2);
     const msg = el("p", "muted small"); box.appendChild(msg);
     const modSel = row1.querySelector("#t-module");
@@ -193,20 +193,20 @@
   /* ---------- aanvragen en geschiedenis ---------- */
   function renderRequests(box) {
     box.appendChild(el("h3", null, "Aanvragen van de kinderen"));
-    box.appendChild(el("p", "muted small", "Een kind dat plumkes inwisselt, vraagt de beloning hier aan. Jij geeft ze echt en klikt op Gegeven, of weigert en de plumkes gaan terug."));
+    box.appendChild(el("p", "muted small", "Een kind dat coins inwisselt, vraagt de beloning hier aan. Jij geeft ze echt en klikt op Gegeven, of weigert en de coins gaan terug."));
     const list = el("div", "list"); const open = S().requests.filter(q => q.status === "open");
     if (!open.length) list.appendChild(el("p", "muted small", "Geen openstaande aanvragen."));
     open.forEach(q => {
-      const d = el("div", "item", `<span><strong>${esc(OK.childName(q.child))}</strong> wil: ${esc(q.reward)} <span class="muted">(${q.cost} plumkes, ${OK.fmtDate(q.d)})</span></span>`);
+      const d = el("div", "item", `<span><strong>${esc(OK.childName(q.child))}</strong> wil: ${esc(q.reward)} <span class="muted">(${q.cost} coins, ${OK.fmtDate(q.d)})</span></span>`);
       const r = el("div", "row"); const ok = el("button", "btn mint", "Gegeven"); ok.type = "button"; ok.addEventListener("click", () => { q.status = "ok"; OK.save(); renderRewards(); });
-      const no = el("button", "btn ghost", "Weigeren, plumkes terug"); no.type = "button"; no.addEventListener("click", () => { q.status = "no"; OK.addPoints(q.child, q.cost, "terug: " + q.reward); renderRewards(); });
+      const no = el("button", "btn ghost", "Weigeren, coins terug"); no.type = "button"; no.addEventListener("click", () => { q.status = "no"; OK.addPoints(q.child, q.cost, "terug: " + q.reward); renderRewards(); });
       r.append(ok, no); d.appendChild(r); list.appendChild(d);
     });
     box.appendChild(list);
-    const hist = el("details", null, `<summary class="muted small" style="cursor:pointer">Geschiedenis van plumkes</summary>`); box.appendChild(hist); box = hist;
+    const hist = el("details", null, `<summary class="muted small" style="cursor:pointer">Geschiedenis van coins</summary>`); box.appendChild(hist); box = hist;
     const days = {}; S().log.forEach(l => { if (l.what === "ex") { const k = l.d.slice(0, 10) + "|" + l.child; days[k] = days[k] || { d: l.d, child: l.child, n: 0, c: 0 }; days[k].n += l.n; days[k].c++; } });
     const rows = S().log.filter(l => l.what !== "ex").concat(Object.values(days).map(x => ({ d: x.d, child: x.child, what: `${x.c} oefeningen`, n: x.n }))).sort((a, b) => b.d.localeCompare(a.d)).slice(0, 50);
-    const wrap = el("div", "table-wrap", `<table><thead><tr><th>Datum</th><th>Kind</th><th>Wat</th><th>Plumkes</th></tr></thead><tbody>${rows.map(l => `<tr><td>${OK.fmtDate(l.d)}</td><td>${esc(OK.childName(l.child))}</td><td>${esc(l.what.replace("dagdoel", "dagdoel gehaald").replace(/^toets$/, "toetsbonus").replace(/^opdracht$/, "opdracht afgewerkt"))}</td><td style="color:${l.n < 0 ? "var(--rose)" : "var(--mint)"}">${l.n > 0 ? "+" : ""}${l.n}</td></tr>`).join("")}</tbody></table>`);
+    const wrap = el("div", "table-wrap", `<table><thead><tr><th>Datum</th><th>Kind</th><th>Wat</th><th>Coins</th></tr></thead><tbody>${rows.map(l => `<tr><td>${OK.fmtDate(l.d)}</td><td>${esc(OK.childName(l.child))}</td><td>${esc(l.what.replace("dagdoel", "dagdoel gehaald").replace(/^toets$/, "toetsbonus").replace(/^opdracht$/, "opdracht afgewerkt"))}</td><td style="color:${l.n < 0 ? "var(--rose)" : "var(--mint)"}">${l.n > 0 ? "+" : ""}${l.n}</td></tr>`).join("")}</tbody></table>`);
     box.appendChild(wrap);
   }
 
@@ -415,7 +415,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     const reqBox = el("div", "card stack"); root.appendChild(reqBox); renderRequests(reqBox);
     const box = el("div", "card stack"); root.appendChild(box);
     box.appendChild(el("h3", null, "De winkel"));
-    box.appendChild(el("p", "muted small", "Jij bepaalt wat er te verdienen valt en wat het kost. Richtlijn: een sessie van 15 vragen levert zo'n 100 tot 150 plumkes op. Beloningen gelden alleen voor kinderen met de schatkiststijl."));
+    box.appendChild(el("p", "muted small", "Jij bepaalt wat er te verdienen valt en wat het kost. Richtlijn: een sessie van 15 vragen levert zo'n 100 tot 150 coins op. Beloningen gelden alleen voor kinderen met de schatkiststijl."));
     const add = el("div", "row", `<label class="f">Beloning<input type="text" id="r-name" placeholder="bv. Half uur langer opblijven"></label><label class="f" style="max-width:140px">Kost<input type="number" id="r-cost" min="1" value="150"></label><label class="f" style="max-width:180px">Voor wie<select id="r-children"><option value="all">Iedereen</option>${kids.map(k => `<option value="${k.id}">${esc(k.name)}</option>`).join("")}</select></label>`);
     const b = el("button", "btn", "Toevoegen"); b.type = "button"; add.appendChild(b); box.appendChild(add);
     b.addEventListener("click", () => { const n = $("r-name").value.trim(), c = parseInt($("r-cost").value, 10); if (!n || !(c > 0)) return; const w = $("r-children").value; S().rewards.push({ id: OK.uid(), name: n, cost: c, children: w === "all" ? "all" : [w] }); OK.save(); renderRewards(); });
@@ -473,7 +473,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
   /* ---------- instellingen ---------- */
   function renderSettings() {
     const box = $("ptab-settings"); box.innerHTML = ""; const s = S().settings;
-    box.appendChild(el("div", "row", `<label class="f">Plumkes per juist antwoord (eerste poging)<input type="number" id="set-p1" min="1" value="${s.p1}"></label><label class="f">Plumkes bij tweede poging<input type="number" id="set-p2" min="0" value="${s.p2}"></label><label class="f">Dagdoel (aantal oefeningen)<input type="number" id="set-goal" min="1" value="${s.goal}"></label><label class="f">Bonus bij dagdoel<input type="number" id="set-goalbonus" min="0" value="${s.goalBonus}"></label>`));
+    box.appendChild(el("div", "row", `<label class="f">Coins per juist antwoord (eerste poging)<input type="number" id="set-p1" min="1" value="${s.p1}"></label><label class="f">Coins bij tweede poging<input type="number" id="set-p2" min="0" value="${s.p2}"></label><label class="f">Dagdoel (aantal oefeningen)<input type="number" id="set-goal" min="1" value="${s.goal}"></label><label class="f">Bonus bij dagdoel<input type="number" id="set-goalbonus" min="0" value="${s.goalBonus}"></label>`));
     box.appendChild(el("div", "row", `<label class="f" style="max-width:300px">Land en onderwijs<select id="set-region">${Object.entries(OK.REGIONS).map(([k, r]) => `<option value="${k}" ${k === (s.region || "be-nl") ? "selected" : ""}>${r.name}</option>`).join("")}</select></label><label class="f" style="max-width:220px">Taal van de schermen<select id="set-lang"><option value="nl" ${(s.lang || "nl") === "nl" ? "selected" : ""}>Nederlands</option><option value="fr" ${s.lang === "fr" ? "selected" : ""}>Français (gedeeltelijk)</option></select></label>`));
     box.appendChild(el("p", "muted small", "Het land bepaalt de namen van de leerjaren en welke oefeningen bestaan (de kaart van België, Frans of Engels als eerste vreemde taal). Verander je het land, klik dan bij elk kind op \"Voorstellen voor dit leerjaar herstellen\"."));
     box.appendChild(el("label", "check", `<input type="checkbox" id="set-accents" ${s.accents ? "checked" : ""}><span>Accenten moeten juist zijn (anders: goedgekeurd met een opmerking)</span>`));
@@ -481,9 +481,9 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     const row = el("div", "row", `<label class="f" style="max-width:220px">Nieuwe oudercode<input type="password" id="set-pin" inputmode="numeric" maxlength="6" placeholder="4 tot 6 cijfers"></label>`);
     const save = el("button", "btn ghost", "Instellingen opslaan"); save.type = "button"; const msg = el("span", "muted small"); row.append(save, msg); box.appendChild(row);
     save.addEventListener("click", () => { s.p1 = +$("set-p1").value || 10; s.p2 = +$("set-p2").value || 0; s.goal = +$("set-goal").value || 15; s.goalBonus = +$("set-goalbonus").value || 0; s.accents = $("set-accents").checked; s.articles = $("set-articles").checked; const regionChanged = s.region !== $("set-region").value || s.lang !== $("set-lang").value; s.region = $("set-region").value; s.lang = $("set-lang").value; if (regionChanged) { OK.save(); OK.applyI18n(); } const pin = $("set-pin").value.trim(); if (pin) { if (!/^\d{4,6}$/.test(pin)) { msg.textContent = "Code: 4 tot 6 cijfers."; return; } S().pin = pin; } OK.save(); msg.textContent = "Opgeslagen."; });
-    box.appendChild(el("h3", null, "Plumkes bijsturen"));
+    box.appendChild(el("h3", null, "Coins bijsturen"));
     const kl = el("div", "list");
-    S().children.forEach(c => { const d = el("div", "item", `<span><strong>${esc(c.name)}</strong> <span class="muted">${c.points} plumkes</span></span>`); const r = el("div", "row"); const inp = el("input"); inp.type = "number"; inp.placeholder = "± plumkes"; inp.style.width = "110px"; const b = el("button", "btn ghost", "Aanpassen"); b.type = "button"; b.addEventListener("click", () => { const n = parseInt(inp.value, 10); if (!n) return; OK.addPoints(c.id, n, "aanpassing door ouder"); renderSettings(); }); r.append(inp, b); d.appendChild(r); kl.appendChild(d); });
+    S().children.forEach(c => { const d = el("div", "item", `<span><strong>${esc(c.name)}</strong> <span class="muted">${c.points} coins</span></span>`); const r = el("div", "row"); const inp = el("input"); inp.type = "number"; inp.placeholder = "± coins"; inp.style.width = "110px"; const b = el("button", "btn ghost", "Aanpassen"); b.type = "button"; b.addEventListener("click", () => { const n = parseInt(inp.value, 10); if (!n) return; OK.addPoints(c.id, n, "aanpassing door ouder"); renderSettings(); }); r.append(inp, b); d.appendChild(r); kl.appendChild(d); });
     box.appendChild(kl);
     box.appendChild(el("h3", null, "Back-up"));
     const online = OK.backend.mode === "supabase";

@@ -38,7 +38,7 @@
     const box = $("players"); box.innerHTML = "";
     S().children.forEach((c, i) => {
       const b = document.createElement("button"); b.type = "button"; b.className = "player";
-      const sub = c.theme.style === "kist" ? `${c.points} plumkes` : `${c.garden.collected.length} ${(OK.gardenVariants[c.theme.variant] || OK.gardenVariants.hondjes).friends}`;
+      const sub = c.theme.style === "kist" ? `${c.points} coins` : `${c.garden.collected.length} ${(OK.gardenVariants[c.theme.variant] || OK.gardenVariants.hondjes).friends}`;
       b.innerHTML = `${OK.avatarHTML(c)}<strong>${c.name}</strong><span class="muted small">${OK.gradeName(c.grade)} · ${sub}</span>`;
       b.addEventListener("click", () => { S().current = c.id; OK.save(); renderHome(); });
       box.appendChild(b);
@@ -64,7 +64,7 @@
       const t = OK.todayCount(c.id), g = S().settings.goal;
       $("st-today").textContent = t; $("st-goal").textContent = g; $("st-week").textContent = OK.weekPoints(c.id); $("st-best").textContent = c.best;
       $("goal-bar").style.width = Math.min(100, t / g * 100) + "%";
-      $("goal-text").textContent = t >= g ? `Dagdoel gehaald. Bonus van ${S().settings.goalBonus} plumkes binnen.` : `Nog ${g - t} oefeningen tot je dagdoel (+${S().settings.goalBonus} plumkes).`;
+      $("goal-text").textContent = t >= g ? `Dagdoel gehaald. Bonus van ${S().settings.goalBonus} coins binnen.` : `Nog ${g - t} oefeningen tot je dagdoel (+${S().settings.goalBonus} coins).`;
       $("streak-tag").textContent = c.streak > 1 ? `${c.streak} op rij` : "";
       const sp = $("shop-preview"); sp.innerHTML = ""; rewardsFor(c).slice(0, 3).forEach(r => sp.appendChild(rewardCard(r, true)));
       $("practice-title").textContent = OK.t("practice"); $("practice-sub").textContent = OK.t("practice_sub");
@@ -344,7 +344,7 @@
     const kist = c.theme.style === "kist";
     $("result-title").textContent = (mode === "test" ? `Toets: ${r.ok} op ${r.n} (${r.pct}%)` : `Klaar: ${r.ok} van ${r.n} juist`) + (r.taskDone ? " · opdracht afgewerkt" : "");
     const v = OK.gardenVariants[c.theme.variant] || OK.gardenVariants.hondjes; const left = (10 - c.garden.flowers % 10) % 10 || 10;
-    $("result-stats").innerHTML = `<div class="stat"><b>${r.ok}/${r.n}</b><span>juist</span></div><div class="stat"><b>${r.pct}%</b><span>score</span></div>` + (kist ? `<div class="stat"><b>+${r.total}</b><span>plumkes verdiend</span></div>` : (mode !== "test" ? `<div class="stat"><b>+${r.ok}</b><span>${v.items}</span></div>` : ""));
+    $("result-stats").innerHTML = `<div class="stat"><b>${r.ok}/${r.n}</b><span>juist</span></div><div class="stat"><b>${r.pct}%</b><span>score</span></div>` + (kist ? `<div class="stat"><b>+${r.total}</b><span>coins verdiend</span></div>` : (mode !== "test" ? `<div class="stat"><b>+${r.ok}</b><span>${v.items}</span></div>` : ""));
     if (!kist && mode !== "test") { const p = document.createElement("p"); p.className = "muted small"; p.id = "result-garden"; p.textContent = `Elke juiste oefening is één ${v.item}. Bij 10 ${v.items} komt er een ${v.friend} bij in je wereld. Nog ${left} ${left === 1 ? v.item : v.items} tot de volgende.`; $("result-stats").after(p); const old = document.querySelectorAll("#result-garden"); if (old.length > 1) old[0].remove(); }
     else { const old = $("result-garden"); if (old) old.remove(); }
     const list = $("result-list"); list.innerHTML = "";
@@ -388,7 +388,7 @@
     if (!sh.children.length) sh.innerHTML = `<p class="muted small">Nog geen beloningen. Papa of mama vult de winkel in het ouderpaneel.</p>`;
     const my = $("my-requests"); my.innerHTML = ""; const mine = S().requests.filter(q => q.child === c.id);
     if (!mine.length) my.innerHTML = `<p class="muted small">Nog niets aangevraagd.</p>`;
-    mine.forEach(q => { const d = document.createElement("div"); d.className = "item"; d.innerHTML = `<span>${q.reward}</span><span class="tag ${q.status === "ok" ? "good" : q.status === "no" ? "bad" : "warn"}">${q.status === "ok" ? "gekregen" : q.status === "no" ? "geweigerd, plumkes terug" : "aangevraagd"}</span>`; my.appendChild(d); });
+    mine.forEach(q => { const d = document.createElement("div"); d.className = "item"; d.innerHTML = `<span>${q.reward}</span><span class="tag ${q.status === "ok" ? "good" : q.status === "no" ? "bad" : "warn"}">${q.status === "ok" ? "gekregen" : q.status === "no" ? "geweigerd, coins terug" : "aangevraagd"}</span>`; my.appendChild(d); });
     OK.show("s-shop");
   }
   $("btn-shop").addEventListener("click", renderShop);
