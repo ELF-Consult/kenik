@@ -466,12 +466,16 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     S().children.forEach(c => { const d = el("div", "item", `<span><strong>${esc(c.name)}</strong> <span class="muted">${c.points} plumkes</span></span>`); const r = el("div", "row"); const inp = el("input"); inp.type = "number"; inp.placeholder = "± plumkes"; inp.style.width = "110px"; const b = el("button", "btn ghost", "Aanpassen"); b.type = "button"; b.addEventListener("click", () => { const n = parseInt(inp.value, 10); if (!n) return; OK.addPoints(c.id, n, "aanpassing door ouder"); renderSettings(); }); r.append(inp, b); d.appendChild(r); kl.appendChild(d); });
     box.appendChild(kl);
     box.appendChild(el("h3", null, "Back-up"));
-    box.appendChild(el("p", "muted small", "Alles wordt bewaard in deze browser op dit toestel. Kopieer af en toe een back-up, of zet ze over naar een ander toestel."));
+    const online = OK.backend.mode === "supabase";
+    box.appendChild(el("p", "muted small", online ? "Alles van je gezin staat veilig op de Kenik-server en komt automatisch op elk toestel waar je inlogt. Een back-up kopiëren kan extra, bv. om iets over te zetten naar een testomgeving." : "Alles wordt bewaard in deze browser op dit toestel. Kopieer af en toe een back-up, of zet ze over naar een ander toestel."));
     const brow = el("div", "row"); const ex = el("button", "btn ghost", "Back-up kopiëren"); ex.type = "button"; const im = el("button", "btn ghost", "Back-up plakken"); im.type = "button"; brow.append(ex, im); box.appendChild(brow);
     const ta = el("textarea", "hidden"); ta.placeholder = "Plak hier je back-up en klik nogmaals op 'Back-up plakken'"; box.appendChild(ta);
     ex.addEventListener("click", () => { ta.classList.remove("hidden"); ta.value = JSON.stringify(S()); ta.select(); try { navigator.clipboard.writeText(ta.value).then(() => { msg.textContent = "Back-up gekopieerd naar het klembord."; }, () => { }); } catch (e) { } });
     im.addEventListener("click", () => { if (ta.classList.contains("hidden")) { ta.classList.remove("hidden"); ta.value = ""; ta.focus(); return; } try { const o = JSON.parse(ta.value); if (!o.children || !o.lists) throw 0; OK.replaceState(o); location.reload(); } catch (e) { msg.textContent = "Dat is geen geldige back-up."; } });
     box.appendChild(el("h3", null, "Gevaarlijke knop"));
-    const del = el("button", "btn danger", "Alles wissen en opnieuw beginnen"); del.type = "button"; armed(del, () => { OK.resetAll(); location.reload(); }); box.appendChild(el("div", "row")).appendChild(del);
+    box.appendChild(el("p", "muted small", "Wist alle kinderen, lijsten, opdrachten, beloningen en resultaten van jouw gezin" + (online ? ", ook op de server. Andere gezinnen worden nooit geraakt. Je blijft ingelogd." : ".")));
+    const del = el("button", "btn danger", "Alles wissen en opnieuw beginnen"); del.type = "button";
+    armed(del, async () => { del.disabled = true; del.textContent = "Bezig met wissen..."; if (OK.backend.wipeFamily) { const r = await OK.backend.wipeFamily(); if (r && r.error) { msg.textContent = r.error; del.disabled = false; del.textContent = "Alles wissen en opnieuw beginnen"; return; } } OK.resetAll(!online); location.reload(); });
+    box.appendChild(el("div", "row")).appendChild(del);
   }
 })(window.OK);

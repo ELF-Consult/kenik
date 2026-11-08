@@ -107,6 +107,15 @@
   /* ---------- de interface die auth.js verwacht ---------- */
   window.OK_BACKEND = {
     mode: "supabase",
+    /* alles van het eigen gezin wissen; RLS laat enkel het eigen gezin toe. Kinderen verwijderen neemt voortgang, codes, toestellen en aanvragen mee (cascade). */
+    async wipeFamily() {
+      if (childAuth || !familyId) return { error: "Enkel een ouder kan dit." };
+      const e1 = (await sb.from("children").delete().eq("family_id", familyId)).error;
+      const e2 = (await sb.from("family_docs").delete().eq("family_id", familyId)).error;
+      const e3 = (await sb.from("family_invites").delete().eq("family_id", familyId)).error;
+      if (e1 || e2 || e3) return { error: "Wissen op de server mislukte: " + (e1 || e2 || e3).message };
+      lastPushed = {}; return { ok: true };
+    },
     async signInParent(email) { const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } }); return error ? { error: error.message } : { ok: true, pending: true, note: "We hebben je een inloglink gemaild. Klik erop op dit toestel; daarna kom je hier terug." }; },
     async signOut() { if (childAuth) { try { await fetch(FN, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "logout", refresh_token: childAuth.refresh_token }) }); } catch (e) { } localStorage.removeItem(KID_KEY); childAuth = null; } else await sb.auth.signOut(); familyId = null; },
     async createChildCode(childId) { await sb.rpc("purge_codes"); const child = OK.childById(childId); const code = OK.makeChildCode(child); const expires = new Date(Date.now() + 15 * 60000).toISOString(); const { error } = await sb.from("child_codes").insert({ code, child_id: childId, family_id: familyId, expires_at: expires }); if (error) return this.createChildCode(childId); return { code, expires }; },

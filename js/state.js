@@ -41,7 +41,8 @@ window.OK = window.OK || {};
   OK.save = function () { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* best effort */ } };
   OK.state = () => S;
   OK.replaceState = function (obj) { S = obj; migrate(S); OK.save(); };
-  OK.resetAll = function () { S = fresh(); seed(S); OK.save(); try { localStorage.removeItem("kenik_session"); } catch (e) { } };
+  /* signOut=false: enkel data wissen, ingelogd blijven (servermodus: de ouder blijft aangemeld) */
+  OK.resetAll = function (signOut) { S = fresh(); seed(S); OK.save(); if (signOut !== false) { try { localStorage.removeItem("kenik_session"); } catch (e) { } } };
 
   function migrate(s) {
     const f = fresh();
