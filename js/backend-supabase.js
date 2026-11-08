@@ -79,15 +79,24 @@
   const origSave = () => { const f = OK.save; return f; };
   document.addEventListener("DOMContentLoaded", () => {
     const base = OK.save; OK.save = function (fromPull) { base(); if (!fromPull) schedulePush(); };
-    sb.auth.onAuthStateChange(async (ev, session) => { if (session && !childAuth) { await ensureFamily(); await pull(); if (OK.onParentAuthed) OK.onParentAuthed(session.user.email); } });
+    let authedOnce = false;
+    sb.auth.onAuthStateChange(async (ev, session) => { if (session && !childAuth) { await ensureFamily(); if (authedOnce && ev === "TOKEN_REFRESHED") return; authedOnce = true; await pull(); if (OK.onParentAuthed) OK.onParentAuthed(session.user.email); } });
     document.addEventListener("visibilitychange", () => { if (!document.hidden) pull(); });
     setInterval(pull, 60000);
     try { const saved = JSON.parse(localStorage.getItem(KID_KEY) || "null"); if (saved) refreshChild(saved); } catch (e) { }
   });
-  async function ensureFamily() {
-    await sb.rpc("accept_invites");
-    const { data: m } = await sb.from("family_members").select("family_id").limit(1);
-    if (m && m.length) familyId = m[0].family_id; else { const { data } = await sb.rpc("create_family", { p_name: null }); familyId = data; }
+  /* één keer per sessie: onAuthStateChange vuurt bij het inloggen meerdere keren (INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED),
+     dus zonder deze vergrendeling zou er twee keer een gezin aangemaakt worden */
+  let familyPromise = null;
+  function ensureFamily() {
+    if (familyId) return Promise.resolve(familyId);
+    if (!familyPromise) familyPromise = (async () => {
+      await sb.rpc("accept_invites");
+      const { data: m } = await sb.from("family_members").select("family_id").order("joined_at").limit(1);
+      if (m && m.length) familyId = m[0].family_id; else { const { data } = await sb.rpc("create_family", { p_name: null }); familyId = data; }
+      return familyId;
+    })().finally(() => { familyPromise = null; });
+    return familyPromise;
   }
   async function refreshChild(saved) {
     const r = await fetch(FN, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "refresh", refresh_token: saved.refresh_token }) });
