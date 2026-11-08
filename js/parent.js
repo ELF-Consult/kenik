@@ -221,7 +221,7 @@
     const box = el("div", "card stack"); root.appendChild(box);
     const form = el("div", "stack"); form.id = "photo-block";
     form.innerHTML = `<h3>Nieuwe lijst</h3>
-      <div class="row"><label class="f">Naam van de lijst <span class="muted small">(mag leeg: wordt uit de foto gehaald)</span><input type="text" id="wl-name" placeholder="bv. Unité 4: à l'école"></label>
+      <div class="row"><label class="f">Naam van de lijst<input type="text" id="wl-name" placeholder="bv. Unité 4: à l'école"></label>
         <label class="f" style="max-width:200px">Vak<select id="wl-subject">${OK.SUBJECTS.map(s => `<option>${s}</option>`).join("")}</select></label>
         <label class="f" style="max-width:200px">Voor wie<select id="wl-children"><option value="all">Iedereen</option>${kids.map(k => `<option value="${k.id}">${esc(k.name)}</option>`).join("")}</select></label></div>
       <label class="check"><input type="checkbox" id="wl-pack"><span>Woordpakket voor spelling <span class="muted small">(alleen woorden, geen vertaling; voor dictee en d/t)</span></span></label>
@@ -286,7 +286,8 @@
     $("btn-add-list").addEventListener("click", () => {
       readReview(); const pack = $("wl-pack").checked, subject = pack ? "Nederlands" : $("wl-subject").value;
       const items = (draftItems || []).map(x => pack ? [x.q.trim().toLowerCase(), x.q.trim().toLowerCase()] : [x.q.trim(), x.a.trim()]).filter(p => p[0] && p[1]);
-      const name = $("wl-name").value.trim() || (pack ? "Woordpakket" : subject + " " + OK.fmtDate(OK.today()));
+      const name = $("wl-name").value.trim();
+      if (!name) { $("wl-msg").textContent = "Geef de lijst eerst een naam."; $("wl-name").focus(); return; }
       if (!items.length) { $("wl-msg").textContent = "Er staat niets om op te slaan."; return; }
       const who = $("wl-children").value;
       S().lists.push({ id: OK.uid(), name, subject, lang: OK.langFor(subject), children: who === "all" ? "all" : [who], items, pack, created: OK.nowISO() }); OK.save();
