@@ -216,8 +216,9 @@
   const sampleAvailable = () => OK.ai.available();
 
   function renderLists() {
-    const box = $("ptab-lists"); box.innerHTML = "";
+    const root = $("ptab-lists"); root.innerHTML = ""; root.className = "stack ptab";
     const kids = S().children;
+    const box = el("div", "card stack"); root.appendChild(box);
     const form = el("div", "stack"); form.id = "photo-block";
     form.innerHTML = `<h3>Nieuwe lijst</h3>
       <div class="row"><label class="f">Naam van de lijst <span class="muted small">(mag leeg: wordt uit de foto gehaald)</span><input type="text" id="wl-name" placeholder="bv. Unité 4: à l'école"></label>
@@ -243,18 +244,22 @@
         <div class="stack hidden" id="photo-verbs"><p class="muted small">Gevonden vervoegingen:</p><div class="list" id="photo-verb-list"></div><div class="row"><button class="btn ghost" id="btn-add-photo-verbs" type="button">Werkwoorden toevoegen aan de voorraad</button></div></div>
         <div class="row"><button class="btn mint big" id="btn-add-list" type="button">Lijst opslaan</button><button class="btn ghost" id="btn-drop-draft" type="button">Weg ermee</button></div><p class="small" id="wl-msg"></p></div>`;
     box.appendChild(form);
-    box.appendChild(el("h3", null, "Bestaande lijsten"));
+    /* bestaande lijsten: eigen kaart, één regel per lijst met naam, kenmerken en rechts voor wie + verwijderen */
+    const card2 = el("div", "card stack"); root.appendChild(card2);
+    card2.appendChild(el("div", "q-head", `<h3>Bestaande lijsten</h3><span class="muted small">${S().lists.length} ${S().lists.length === 1 ? "lijst" : "lijsten"}</span>`));
     const list = el("div", "list");
     S().lists.slice().reverse().forEach(l => {
-      const d = el("div", "item", `<span><strong>${esc(l.name)}</strong> <span class="muted">${l.pack ? "woordpakket" : esc(l.subject || "")} · ${l.items.length} ${l.pack ? "woorden" : "paren"} · ${esc(OK.childName(l.children === "all" || !l.children ? "all" : l.children[0]))}${l.example ? " · voorbeeld" : ""}</span></span>`);
-      const r = el("div", "row");
-      const who = el("select"); who.innerHTML = `<option value="all">Iedereen</option>${kids.map(k => `<option value="${k.id}" ${Array.isArray(l.children) && l.children[0] === k.id ? "selected" : ""}>${esc(k.name)}</option>`).join("")}`; who.style.width = "auto"; who.addEventListener("change", () => { l.children = who.value === "all" ? "all" : [who.value]; OK.save(); });
+      const d = el("div", "lrow");
+      d.innerHTML = `<div class="lrow-main"><strong>${esc(l.name)}</strong><span class="muted small">${l.pack ? `<span class="tag">woordpakket</span>` : `<span class="tag">${esc(l.subject || "")}</span>`} ${l.items.length} ${l.pack ? "woorden" : "paren"}${l.example ? ` <span class="tag">voorbeeld</span>` : ""}</span></div>`;
+      const r = el("div", "lrow-actions");
+      const who = el("select"); who.title = "Voor wie"; who.innerHTML = `<option value="all">Iedereen</option>${kids.map(k => `<option value="${k.id}" ${Array.isArray(l.children) && l.children[0] === k.id ? "selected" : ""}>${esc(k.name)}</option>`).join("")}`; who.addEventListener("change", () => { l.children = who.value === "all" ? "all" : [who.value]; OK.save(); });
       const x = el("button", "x", "✕"); x.type = "button"; x.title = "Lijst verwijderen"; x.addEventListener("click", () => { if (x.dataset.armed) { S().lists = S().lists.filter(q => q !== l); OK.save(); renderLists(); } else { x.dataset.armed = "1"; x.textContent = "Zeker?"; setTimeout(() => { delete x.dataset.armed; x.textContent = "✕"; }, 2500); } });
       r.append(who, x); d.appendChild(r); list.appendChild(d);
     });
     if (!S().lists.length) list.appendChild(el("p", "muted small", "Nog geen lijsten."));
-    box.appendChild(list);
-    renderTexts(box);
+    card2.appendChild(list);
+    const card3 = el("div", "card stack"); root.appendChild(card3);
+    renderTexts(card3);
 
     /* ---- handlers ---- */
     const foreignLabels = () => { const s = $("wl-subject").value, foreign = OK.langFor(s) !== "nl"; $("wl-order").options[0].text = foreign ? `Nederlands - ${s}` : "vraag - antwoord"; $("wl-order").options[1].text = foreign ? `${s} - Nederlands` : "antwoord - vraag"; $("rv-h1").textContent = $("wl-pack").checked ? "Woord" : foreign ? "Nederlands" : "Vraag"; $("rv-h2").textContent = foreign ? s : "Antwoord"; $("rv-h2").parentElement.classList.toggle("pack", $("wl-pack").checked); };
@@ -361,7 +366,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
       finally { gen.disabled = false; }
     });
     const tl = el("div", "list");
-    S().texts.forEach(tx => { const d = el("div", "item", `<span><strong>${esc(tx.title)}</strong> <span class="muted">${OK.gradeName(tx.grade)} · ${tx.questions.length} vragen · ${esc(OK.childName(tx.children === "all" || !tx.children ? "all" : tx.children[0]))}</span></span>`); const x = el("button", "x", "✕"); x.type = "button"; x.addEventListener("click", () => { if (x.dataset.armed) { S().texts = S().texts.filter(q => q !== tx); OK.save(); renderLists(); } else { x.dataset.armed = "1"; x.textContent = "zeker?"; setTimeout(() => { delete x.dataset.armed; x.textContent = "✕"; }, 3000); } }); d.appendChild(x); tl.appendChild(d); });
+    S().texts.forEach(tx => { const d = el("div", "lrow", `<div class="lrow-main"><strong>${esc(tx.title)}</strong><span class="muted small"><span class="tag">${OK.gradeName(tx.grade)}</span> ${tx.questions.length} vragen · ${esc(OK.childName(tx.children === "all" || !tx.children ? "all" : tx.children[0]))}</span></div>`); const x = el("button", "x", "✕"); x.type = "button"; x.addEventListener("click", () => { if (x.dataset.armed) { S().texts = S().texts.filter(q => q !== tx); OK.save(); renderLists(); } else { x.dataset.armed = "1"; x.textContent = "zeker?"; setTimeout(() => { delete x.dataset.armed; x.textContent = "✕"; }, 3000); } }); d.appendChild(x); tl.appendChild(d); });
     if (!S().texts.length) tl.appendChild(el("p", "muted small", "Nog geen teksten."));
     box.appendChild(tl);
   }
