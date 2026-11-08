@@ -108,6 +108,7 @@
   window.OK_BACKEND = {
     mode: "supabase",
     async isAdmin() { if (childAuth) return false; const { data } = await sb.rpc("is_admin"); return !!data; },
+    async adminStats() { const { data, error } = await sb.rpc("admin_stats"); return error ? { error: error.message } : data; },
     /* alles van het eigen gezin wissen; RLS laat enkel het eigen gezin toe. Kinderen verwijderen neemt voortgang, codes, toestellen en aanvragen mee (cascade). */
     async wipeFamily() {
       if (childAuth || !familyId) return { error: "Enkel een ouder kan dit." };

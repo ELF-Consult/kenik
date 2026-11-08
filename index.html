@@ -140,7 +140,7 @@
   <!-- Ouderpaneel -->
   <section class="stack hidden" id="s-parent">
     <div class="card stack">
-      <div class="q-head"><h2 data-i18n="parent_panel">Ouderpaneel</h2><div class="row"><a class="btn ghost hidden" id="btn-admin" href="admin.html" style="text-decoration:none">Beheer</a><button class="btn ghost" id="btn-parent-exit" type="button" data-i18n="close">Sluiten</button></div></div>
+      <div class="q-head"><h2 data-i18n="parent_panel">Ouderpaneel</h2><button class="btn ghost" id="btn-parent-exit" type="button" data-i18n="close">Sluiten</button></div>
       <div class="tabs" id="ptabs">
         <button class="tab active" data-tab="kids" type="button" data-i18n="tab_kids">Kinderen</button>
         <button class="tab" data-tab="tasks" type="button" data-i18n="tab_tasks">Opdrachten</button>
@@ -150,9 +150,11 @@
         <button class="tab" data-tab="results" type="button" data-i18n="tab_results">Resultaten</button>
         <button class="tab" data-tab="family" type="button">Gezin</button>
         <button class="tab" data-tab="settings" type="button" data-i18n="tab_settings">Instellingen</button>
+        <button class="tab hidden" data-tab="admin" type="button" id="tab-admin">Beheer</button>
       </div>
     </div>
     <div class="card stack ptab" id="ptab-kids"></div>
+    <div class="stack ptab hidden" id="ptab-admin"></div>
     <div class="card stack ptab hidden" id="ptab-tasks"></div>
     <div class="card stack ptab hidden" id="ptab-lists"></div>
     <div class="stack ptab hidden" id="ptab-verbs"></div>
@@ -194,6 +196,7 @@
 <script src="js/content/ordenen.js"></script>
 <script src="js/content/taal.js"></script>
 <script src="js/parent.js"></script>
+<script src="js/admin.js"></script>
 <script src="js/ui.js"></script>
 
 </body>
