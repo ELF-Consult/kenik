@@ -141,7 +141,9 @@
   });
 
   /* Veld-editor gedeeld met het ouderpaneel. restrictTo = enkel opties die de ouder aanzette. */
-  OK.fieldEditor = function (f, value, child, restrict) {
+  /* restrict: true = instelscherm van het kind (leeg beginnen), false = ouderpaneel, "task" = opdracht (concreet kiezen, geen "alles") */
+  OK.fieldEditor = function (f, value, child, mode) {
+    const restrict = mode === true, task = mode === "task";
     const wrap = document.createElement("div"); wrap.className = "stack"; wrap.dataset.key = f.key;
     const lbl = document.createElement("p"); lbl.className = "muted small"; lbl.textContent = f.label; wrap.appendChild(lbl);
     /* korte labels worden knopjes naast elkaar, langere een nette lijst onder elkaar */
@@ -162,8 +164,8 @@
       const all = S().lists.filter(l => OK.forChild(l, child.id)); const sel = value === "all" || !value ? all.map(l => l.id) : value;
       const shown = restrict ? all.filter(l => sel.includes(l.id)) : all; box = container(true);
       if (!shown.length) box.innerHTML = `<p class="muted small">Nog geen lijsten voor dit kind. Die maak je onder het tabblad Lijsten.</p>`;
-      shown.forEach(l => box.appendChild(row("checkbox", f.key, l.id, l.name, `${l.items.length} ${l.items.length === 1 ? "paar" : "paren"}${l.subject ? " · " + l.subject : ""}`, restrict ? false : sel.includes(l.id))));
-      if (!restrict) { const a = document.createElement("label"); a.className = "check"; a.innerHTML = `<input type="checkbox" data-all="1" ${value === "all" || !value ? "checked" : ""}><span>Alle lijsten voor dit kind, ook lijsten die je later toevoegt</span>`; box.appendChild(a); }
+      shown.forEach(l => box.appendChild(row("checkbox", f.key, l.id, l.name, `${l.items.length} ${l.items.length === 1 ? "paar" : "paren"}${l.subject ? " · " + l.subject : ""}`, restrict || task ? false : sel.includes(l.id))));
+      if (!restrict && !task) { const a = document.createElement("label"); a.className = "check"; a.innerHTML = `<input type="checkbox" data-all="1" ${value === "all" || !value ? "checked" : ""}><span>Alle lijsten voor dit kind, ook lijsten die je later toevoegt</span>`; box.appendChild(a); }
     } else if (f.type === "packs") {
       const all = S().lists.filter(l => l.pack && OK.forChild(l, child.id)); const sel = value === "all" || !value ? all.map(l => l.id) : value;
       const shown = restrict ? all.filter(l => sel.includes(l.id)) : all; box = container(true);

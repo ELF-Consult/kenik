@@ -169,11 +169,12 @@
       fields.innerHTML = ""; const m = OK.modules[modSel.value]; if (!m) return;
       const cid = row1.querySelector("#t-child").value; const child = cid === "all" ? (kids[0] || { id: "x", modules: {} }) : OK.childById(cid);
       const cfg = (child && child.modules[m.id]) || (m.defaultsFor && m.defaultsFor(child ? child.grade : 6)) || {};
-      (m.schema || []).forEach(f => fields.appendChild(OK.fieldEditor(f, cfg[f.key], child, false)));
+      (m.schema || []).forEach(f => fields.appendChild(OK.fieldEditor(f, cfg[f.key], child, "task")));
     }
     row1.querySelector("#t-child").addEventListener("change", fillModules); modSel.addEventListener("change", fillFields); fillModules();
     addBtn.addEventListener("click", () => {
-      const m = OK.modules[modSel.value]; if (!m) return; const cfg = {}; (m.schema || []).forEach(f => { const v = OK.readField(f, fields); if (v !== undefined) cfg[f.key] = v; });
+      const m = OK.modules[modSel.value]; if (!m) return; const cfg = {}; let emptyList = false; (m.schema || []).forEach(f => { const v = OK.readField(f, fields); if (v !== undefined) cfg[f.key] = v; if ((f.type === "lists" || f.type === "packs") && Array.isArray(v) && !v.length) emptyList = true; });
+      if (emptyList) { OK.toast("Kies eerst welke lijst(en) de opdracht omvat.", true); return; }
       S().tasks.push({ id: OK.uid(), child: row1.querySelector("#t-child").value, module: m.id, config: cfg, mode: row1.querySelector("#t-mode").value, count: +row2.querySelector("#t-count").value, due: row2.querySelector("#t-due").value || null, bonus: +row2.querySelector("#t-bonus").value || 0, status: "open", created: OK.nowISO() });
       OK.save(); msg.textContent = "Opdracht staat klaar."; renderTasks();
     });
