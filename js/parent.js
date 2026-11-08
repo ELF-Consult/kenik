@@ -239,20 +239,21 @@
         <label class="f" style="max-width:200px">Voor wie<select id="wl-children"><option value="all">Iedereen</option>${kids.map(k => `<option value="${k.id}">${esc(k.name)}</option>`).join("")}</select></label></div>
       <input type="checkbox" id="wl-pack" class="hidden">
       <p class="muted small hidden" id="wl-pack-hint">Een woordpakket is het rijtje woorden voor het dictee: alleen de woorden, geen vertaling. Kenik gebruikt het voor dictee, "kies de juiste schrijfwijze" en d/t.</p>
-      <div class="photo-cta">
-        <button class="btn big" id="btn-take-photo" type="button">📷 Foto maken of kiezen</button>
-        <span class="muted small" id="photo-status">Neem een foto van de bladzijde met de woordjes, begrippen of vervoegingen. Meerdere bladzijden mag.</span>
+      <div class="choice2">
+        <button class="tile primary" id="btn-take-photo" type="button"><span class="tile-icon">📷</span><strong>Foto van het handboek</strong><span>Neem een foto van de bladzijde met de woordjes of begrippen. Meerdere bladzijden mag. Je kijkt daarna alles na.</span></button>
+        <button class="tile" id="btn-manual" type="button"><span class="tile-icon">⌨️</span><strong>Zelf typen of plakken</strong><span>Uit een mail, Word of gewoon overtypen. Eén paar per regel.</span></button>
         <input type="file" id="photo-input" accept="image/*" multiple class="hidden">
       </div>
+      <p class="muted small hidden" id="photo-status"></p>
       <div class="row thumbs" id="photo-thumbs"></div>
       <div class="row hidden" id="photo-actions"><button class="btn mint" id="btn-read-photos" type="button">Lees de foto's</button><button class="btn ghost" id="btn-clear-photos" type="button">Foto's weg</button><button class="btn ghost hidden" id="btn-stop-photos" type="button">Stop</button></div>
       <p class="small" id="photo-msg"></p>
-      <details id="manual-block"><summary class="muted small">Liever zelf typen of plakken?</summary>
+      <div class="stack hidden" id="manual-block">
         <p class="muted small">Eén paar per regel: vraag en antwoord gescheiden door een streepje, =, puntkomma of tab. Meerdere juiste antwoorden met een komma. Bij een woordpakket: één woord per regel.</p>
         <div class="row"><label class="f" style="max-width:260px">Volgorde in de tekst<select id="wl-order"><option value="q-a">vraag - antwoord</option><option value="a-q">antwoord - vraag</option></select></label></div>
         <textarea id="wl-text" placeholder="de hond - le chien&#10;het huis - la maison&#10;zoeken - chercher"></textarea>
-        <div class="row"><button class="btn ghost" id="btn-parse-text" type="button">Zet klaar om na te kijken</button></div>
-      </details>
+        <div class="row"><button class="btn" id="btn-parse-text" type="button">Zet klaar om na te kijken</button></div>
+      </div>
       <div class="stack hidden" id="review"><h3>Nakijken</h3><p class="muted small">Verbeter wat fout gelezen is, schrap wat niet hoort. Dan opslaan.</p><div class="table-wrap"><table class="review"><thead><tr><th id="rv-h1">Vraag</th><th id="rv-h2">Antwoord</th><th></th></tr></thead><tbody id="rv-body"></tbody></table></div>
         <div class="row"><button class="pill-btn" id="btn-add-row" type="button">+ regel</button></div>
         <div class="stack hidden" id="photo-verbs"><p class="muted small">Gevonden vervoegingen:</p><div class="list" id="photo-verb-list"></div><div class="row"><button class="btn ghost" id="btn-add-photo-verbs" type="button">Werkwoorden toevoegen aan de voorraad</button></div></div>
@@ -288,7 +289,8 @@
     form.getFiles = () => chosen; form.clearFiles = () => { chosen = []; showFiles(); };
     $("btn-stop-photos").addEventListener("click", () => { if (photoCtl) photoCtl.abort(); });
     $("btn-read-photos").addEventListener("click", readPhotos);
-    sampleAvailable().then(fn => { const st = $("photo-status"); if (!st) return; if (!fn) { st.innerHTML = `<span class="tag bad">Niet beschikbaar</span> ${esc(OK.ai.reason)}`; $("btn-take-photo").disabled = true; $("manual-block").open = true; } });
+    sampleAvailable().then(fn => { const st = $("photo-status"); if (!st) return; if (!fn) { st.classList.remove("hidden"); st.innerHTML = `<span class="tag bad">Foto's lezen niet beschikbaar</span> ${esc(OK.ai.reason)}`; $("btn-take-photo").disabled = true; $("btn-take-photo").classList.remove("primary"); $("btn-manual").classList.add("primary"); } });
+    $("btn-manual").addEventListener("click", () => { $("manual-block").classList.toggle("hidden"); if (!$("manual-block").classList.contains("hidden")) $("wl-text").focus(); });
 
     $("btn-parse-text").addEventListener("click", () => {
       const pack = $("wl-pack").checked;
