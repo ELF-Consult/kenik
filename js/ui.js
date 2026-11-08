@@ -21,6 +21,7 @@
     if (showBadge) { $("who-avatar").innerHTML = OK.avatarHTML(c, 30); $("who-name").textContent = c.name; $("who-sub").textContent = OK.isChildSession() ? "" : OK.t("switch"); $("btn-switch").disabled = OK.isChildSession(); }
     $("btn-parent").classList.toggle("hidden", id === "s-landing" || id === "s-parent" || OK.isChildSession());
     $("btn-logout").classList.toggle("hidden", !ses || id === "s-landing" || (ses.type === "family" && id !== "s-parent"));
+    if (id === "s-landing" || (ses && ses.type === "family" && id !== "s-parent")) $("btn-admin").classList.add("hidden"); else if (OK.refreshAdminButton) OK.refreshAdminButton();
     window.scrollTo(0, 0);
   };
   OK.applyTheme = function (child) {

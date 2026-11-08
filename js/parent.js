@@ -10,7 +10,16 @@
   const GRADES = { get list() { return OK.GRADE_IDS.map(g => [g, OK.gradeName(g)]); }, map(fn) { return this.list.map(fn); }, slice(a, b) { return this.list.slice(a, b); } };
   const armed = (btn, fn) => btn.addEventListener("click", () => { if (btn.dataset.armed) { fn(); } else { btn.dataset.armed = "1"; btn.dataset.label = btn.textContent; btn.textContent = "Zeker? Klik nog eens."; btn.classList.add("armed"); setTimeout(() => { delete btn.dataset.armed; btn.textContent = btn.dataset.label; btn.classList.remove("armed"); }, 3500); } });
 
-  OK.openParent = function () { OK.applyTheme(null); OK.show("s-parent"); const first = document.querySelector("#ptabs .tab"); first.click(); if (OK.backend.isAdmin) OK.backend.isAdmin().then(ok => $("tab-admin").classList.toggle("hidden", !ok)); };
+  OK.openParent = function () { OK.applyTheme(null); OK.show("s-parent"); const first = document.querySelector("#ptabs .tab"); first.click(); };
+  /* Beheer: knop in de kop, enkel voor beheerders; opent het ouderpaneel op het (verborgen) tabblad Beheer */
+  let adminKnown = null;
+  OK.refreshAdminButton = async function () {
+    const ses = OK.session(); const b = $("btn-admin");
+    if (!ses || ses.type === "child" || !OK.backend.isAdmin) { b.classList.add("hidden"); return; }
+    if (adminKnown === null) adminKnown = await OK.backend.isAdmin();
+    b.classList.toggle("hidden", !adminKnown);
+  };
+  $("btn-admin").addEventListener("click", () => { OK.applyTheme(null); OK.show("s-parent"); $("tab-admin").click(); });
   document.querySelectorAll("#ptabs .tab").forEach(t => t.addEventListener("click", () => {
     document.querySelectorAll("#ptabs .tab").forEach(x => x.classList.toggle("active", x === t));
     document.querySelectorAll(".ptab").forEach(p => p.classList.toggle("hidden", p.id !== "ptab-" + t.dataset.tab));
@@ -222,9 +231,10 @@
     const form = el("div", "stack"); form.id = "photo-block";
     form.innerHTML = `<h3>Nieuwe lijst</h3>
       <div class="row"><label class="f">Naam van de lijst<input type="text" id="wl-name" placeholder="bv. Unité 4: à l'école"></label>
-        <label class="f" style="max-width:200px">Vak<select id="wl-subject">${OK.SUBJECTS.map(s => `<option>${s}</option>`).join("")}</select></label>
+        <label class="f" style="max-width:240px">Vak<select id="wl-subject">${OK.SUBJECTS.map(s => `<option>${s}</option>`).join("")}<option value="__pack">Spelling (woordpakket)</option></select></label>
         <label class="f" style="max-width:200px">Voor wie<select id="wl-children"><option value="all">Iedereen</option>${kids.map(k => `<option value="${k.id}">${esc(k.name)}</option>`).join("")}</select></label></div>
-      <label class="check"><input type="checkbox" id="wl-pack"><span>Woordpakket voor spelling <span class="muted small">(alleen woorden, geen vertaling; voor dictee en d/t)</span></span></label>
+      <input type="checkbox" id="wl-pack" class="hidden">
+      <p class="muted small hidden" id="wl-pack-hint">Een woordpakket is het rijtje woorden voor het dictee: alleen de woorden, geen vertaling. Kenik gebruikt het voor dictee, "kies de juiste schrijfwijze" en d/t.</p>
       <div class="photo-cta">
         <button class="btn big" id="btn-take-photo" type="button">📷 Foto maken of kiezen</button>
         <span class="muted small" id="photo-status">Neem een foto van de bladzijde met de woordjes, begrippen of vervoegingen. Meerdere bladzijden mag.</span>
@@ -262,8 +272,9 @@
     renderTexts(card3);
 
     /* ---- handlers ---- */
-    const foreignLabels = () => { const s = $("wl-subject").value, foreign = OK.langFor(s) !== "nl"; $("wl-order").options[0].text = foreign ? `Nederlands - ${s}` : "vraag - antwoord"; $("wl-order").options[1].text = foreign ? `${s} - Nederlands` : "antwoord - vraag"; $("rv-h1").textContent = $("wl-pack").checked ? "Woord" : foreign ? "Nederlands" : "Vraag"; $("rv-h2").textContent = foreign ? s : "Antwoord"; $("rv-h2").parentElement.classList.toggle("pack", $("wl-pack").checked); };
-    $("wl-subject").addEventListener("change", foreignLabels); $("wl-pack").addEventListener("change", () => { if ($("wl-pack").checked) $("wl-subject").value = "Nederlands"; foreignLabels(); if (draftItems) showReview(); }); foreignLabels();
+    const foreignLabels = () => { const s = $("wl-subject").value === "__pack" ? "Nederlands" : $("wl-subject").value, foreign = OK.langFor(s) !== "nl"; $("wl-order").options[0].text = foreign ? `Nederlands - ${s}` : "vraag - antwoord"; $("wl-order").options[1].text = foreign ? `${s} - Nederlands` : "antwoord - vraag"; $("rv-h1").textContent = $("wl-pack").checked ? "Woord" : foreign ? "Nederlands" : "Vraag"; $("rv-h2").textContent = foreign ? s : "Antwoord"; $("rv-h2").parentElement.classList.toggle("pack", $("wl-pack").checked); };
+    const syncPack = () => { const isPack = $("wl-subject").value === "__pack"; $("wl-pack").checked = isPack; $("wl-pack-hint").classList.toggle("hidden", !isPack); $("wl-order").parentElement.classList.toggle("hidden", isPack); $("wl-text").placeholder = isPack ? "schoolreis\nde vrachtwagen\nkasteel" : "de hond - le chien\nhet huis - la maison\nzoeken - chercher"; };
+    $("wl-subject").addEventListener("change", () => { syncPack(); foreignLabels(); if (draftItems) showReview(); }); syncPack(); foreignLabels();
 
     let chosen = [];
     const showFiles = () => { const th = $("photo-thumbs"); th.innerHTML = ""; chosen.slice(0, 6).forEach(f => { const img = document.createElement("img"); img.src = URL.createObjectURL(f); img.onload = () => URL.revokeObjectURL(img.src); th.appendChild(img); }); $("photo-actions").classList.toggle("hidden", !chosen.length); if (chosen.length) $("photo-msg").textContent = `${chosen.length} foto${chosen.length > 1 ? "'s" : ""} klaar. Klik op "Lees de foto's".`; };
@@ -320,11 +331,11 @@
     photoCtl = new AbortController();
     try {
       const wantPack = $("wl-pack").checked;
-      const data = await fn.json(wantPack ? OK.packPrompt() : OK.photoPrompt($("wl-subject").value), { images: files, signal: photoCtl.signal });
+      const data = await fn.json(wantPack ? OK.packPrompt() : OK.photoPrompt($("wl-subject").value === "__pack" ? "Nederlands" : $("wl-subject").value), { images: files, signal: photoCtl.signal });
       let items; if (wantPack) { const words = Array.isArray(data.words) ? data.words.map(w => String(w).trim()).filter(Boolean) : []; items = words.map(w => ({ q: w, a: w })); photoVerbs = []; }
       else { items = Array.isArray(data.items) ? data.items.filter(w => w && w.q && w.a).map(w => ({ q: String(w.q), a: String(w.a) })) : []; photoVerbs = Array.isArray(data.verbs) ? data.verbs.filter(v => v && v.inf) : []; }
-      if (!wantPack && items.length && items.every(w => w.q.trim().toLowerCase() === w.a.trim().toLowerCase())) { $("wl-pack").checked = true; $("wl-subject").value = "Nederlands"; }
-      if (items.length) { if (!$("wl-name").value.trim() && data.title) $("wl-name").value = String(data.title); if (!wantPack && OK.SUBJECTS.includes(data.subject)) $("wl-subject").value = data.subject; $("wl-subject").dispatchEvent(new Event("change")); }
+      if (!wantPack && items.length && items.every(w => w.q.trim().toLowerCase() === w.a.trim().toLowerCase())) { $("wl-subject").value = "__pack"; $("wl-subject").dispatchEvent(new Event("change")); }
+      if (items.length) { if (!$("wl-name").value.trim() && data.title) $("wl-name").value = String(data.title); if (!wantPack && OK.SUBJECTS.includes(data.subject) && $("wl-subject").value !== "__pack") $("wl-subject").value = data.subject; $("wl-subject").dispatchEvent(new Event("change")); }
       draftItems = (draftItems || []).concat(items); showReview();
       if (items.length || photoVerbs.length) $("photo-block").clearFiles();
       msg.textContent = items.length || photoVerbs.length ? `${items.length} ${wantPack ? "woorden" : "paren"}${photoVerbs.length ? ` en ${photoVerbs.length} werkwoorden` : ""} gevonden${OK.ai.limit ? ` (${OK.ai.used} van ${OK.ai.limit} deze maand)` : ""}. Kijk na en klik op "Lijst opslaan".` : "Niets herkend. Probeer een scherpere foto, recht van boven, met goed licht.";
