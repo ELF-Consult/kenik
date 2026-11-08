@@ -327,3 +327,7 @@ details>summary{cursor:pointer}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .muted-row td{color:var(--fg2)}
 .bar-cell{display:flex;align-items:center;gap:8px} .bar-cell i{display:block;height:8px;border-radius:4px;background:var(--blue);min-width:2px}
+
+.list-search{margin-bottom:6px}
+.lgroup>summary{cursor:pointer;padding:8px 4px}
+.lgroup .list{padding:4px 0 8px 10px;border-left:2px solid var(--line);margin-left:6px}

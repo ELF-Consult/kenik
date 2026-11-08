@@ -149,6 +149,25 @@
     /* korte labels worden knopjes naast elkaar, langere een nette lijst onder elkaar */
     const chip = (type, name, v, l, checked) => { const c = document.createElement("label"); c.className = "chip"; c.innerHTML = `<input type="${type}" name="${name}" value="${String(v).replace(/"/g, "&quot;")}" ${checked ? "checked" : ""}><span>${l}</span>`; return c; };
     const row = (type, name, v, l, sub, checked) => { const c = document.createElement("label"); c.className = restrict ? "check" : "opt"; c.innerHTML = `<input type="${type}" name="${name}" value="${String(v).replace(/"/g, "&quot;")}" ${checked ? "checked" : ""}><span>${l}${sub ? ` <span class="muted small">${sub}</span>` : ""}</span>`; return c; };
+    /* lijsten kiezen: nieuwste eerst, gegroepeerd per vak zodra er veel zijn, met zoekveld */
+    const listPicker = (box, lists, key, subOf, checkedOf) => {
+      const ordered = lists.slice().reverse();
+      const many = ordered.length > 6; const groups = {}; ordered.forEach(l => { const g = l.subject || "Andere"; (groups[g] = groups[g] || []).push(l); });
+      const gnames = Object.keys(groups);
+      if (ordered.length > 8) {
+        const q = document.createElement("input"); q.type = "text"; q.placeholder = "Zoek een lijst..."; q.className = "list-search"; box.appendChild(q);
+        q.addEventListener("input", () => { const t = q.value.trim().toLowerCase(); box.querySelectorAll("label.check, label.opt").forEach(lb => lb.classList.toggle("hidden", !!t && !lb.textContent.toLowerCase().includes(t))); box.querySelectorAll("details.lgroup").forEach(d => { if (t) d.open = true; }); });
+      }
+      const addRows = (parent, items) => items.forEach(l => parent.appendChild(row("checkbox", key, l.id, l.name, subOf(l), checkedOf(l))));
+      if (!many || gnames.length < 2) { addRows(box, ordered); return; }
+      gnames.forEach(g => {
+        const det = document.createElement("details"); det.className = "modgroup lgroup"; const n = groups[g].filter(checkedOf).length; det.open = n > 0 || gnames.length <= 3;
+        const sum = document.createElement("summary"); sum.innerHTML = `<strong>${g}</strong> <span class="muted small" data-count></span>`; det.appendChild(sum);
+        const inner = document.createElement("div"); inner.className = "list"; addRows(inner, groups[g]); det.appendChild(inner); box.appendChild(det);
+        const upd = () => { sum.querySelector("[data-count]").textContent = `${inner.querySelectorAll("input:checked").length} van ${groups[g].length} gekozen`; };
+        inner.addEventListener("change", upd); upd();
+      });
+    };
     const container = (asRows) => { const d = document.createElement("div"); d.className = asRows ? "list" : "chips"; wrap.appendChild(d); return d; };
     let box;
     if (f.type === "multi") {
@@ -164,13 +183,13 @@
       const all = S().lists.filter(l => OK.forChild(l, child.id)); const sel = value === "all" || !value ? all.map(l => l.id) : value;
       const shown = restrict ? all.filter(l => sel.includes(l.id)) : all; box = container(true);
       if (!shown.length) box.innerHTML = `<p class="muted small">Nog geen lijsten voor dit kind. Die maak je onder het tabblad Lijsten.</p>`;
-      shown.forEach(l => box.appendChild(row("checkbox", f.key, l.id, l.name, `${l.items.length} ${l.items.length === 1 ? "paar" : "paren"}${l.subject ? " · " + l.subject : ""}`, restrict || task ? false : sel.includes(l.id))));
+      listPicker(box, shown, f.key, l => `${l.items.length} ${l.items.length === 1 ? "paar" : "paren"}`, l => restrict || task ? false : sel.includes(l.id));
       if (!restrict && !task) { const a = document.createElement("label"); a.className = "check"; a.innerHTML = `<input type="checkbox" data-all="1" ${value === "all" || !value ? "checked" : ""}><span>Alle lijsten voor dit kind, ook lijsten die je later toevoegt</span>`; box.appendChild(a); }
     } else if (f.type === "packs") {
       const all = S().lists.filter(l => l.pack && OK.forChild(l, child.id)); const sel = value === "all" || !value ? all.map(l => l.id) : value;
       const shown = restrict ? all.filter(l => sel.includes(l.id)) : all; box = container(true);
       if (!shown.length) box.innerHTML = `<p class="muted small">Nog geen woordpakketten. Die maak je onder Lijsten, met het vinkje "woordpakket".</p>`;
-      shown.forEach(l => box.appendChild(row("checkbox", f.key, l.id, l.name, `${l.items.length} woorden`, restrict ? false : sel.includes(l.id))));
+      listPicker(box, shown, f.key, l => `${l.items.length} woorden`, l => restrict ? false : sel.includes(l.id));
       if (!restrict) { const a = document.createElement("label"); a.className = "check"; a.innerHTML = `<input type="checkbox" data-all="1" ${value === "all" || !value ? "checked" : ""}><span>Alle woordpakketten voor dit kind, ook latere</span>`; box.appendChild(a); }
     } else if (f.type === "verbs") {
       const sel = Array.isArray(value) ? value : []; const all = OK.allVerbs(); const shown = restrict && sel.length ? all.filter(v => sel.includes(v.inf)) : all; box = container(false);
