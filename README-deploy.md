@@ -16,31 +16,19 @@ Zonder backend werkt de site ook: alles blijft dan in de browser van het toestel
 
 ## 2. De backend (Supabase)
 
-1. Maak een gratis project op supabase.com, regio **Frankfurt** (eu-central-1). Noteer: Project URL, anon key, JWT secret (Settings > API).
-2. SQL-editor: plak en voer `supabase/schema.sql` uit.
-3. Extra SQL, eenmalig (de rol voor kindtokens):
-   ```sql
-   create role child nologin;
-   grant child to authenticator;
-   grant usage on schema public to child;
-   grant select on all tables in schema public to child;
-   grant insert on reward_requests to child;
-   grant insert, update on child_progress to child;
-   grant execute on function complete_task(uuid, text, text) to child;
-   ```
-4. Authentication > Providers: alleen **Email** aan, met "Magic link" (geen wachtwoord). Authentication > URL configuration: Site URL = je domein; Redirect URLs = je domein.
-5. Edge function: installeer de Supabase CLI, dan
-   ```
-   supabase login
-   supabase link --project-ref <ref>
-   supabase secrets set JWT_SECRET=<jwt secret uit Settings > API>
-   supabase functions deploy child-login --no-verify-jwt
-   ```
-6. Maak in de hoofdmap `config.js`:
-   ```js
-   window.KENIK_CONFIG = { supabaseUrl: "https://<ref>.supabase.co", supabaseAnonKey: "<anon key>" };
-   ```
-   Zet het bestand mee op de site. De anon key mag publiek zijn; de toegangsregels (RLS) in de database bewaken de data.
+Project: **kenik** in organisatie ELF Consult, regio Frankfurt, ref `ynkcucbfojnzqwgxisgo`.
+Al gedaan (8 nov 2026): project aangemaakt, schema + rol `child` uitgevoerd als migratie `kenik_schema`,
+edge function `child-login` gedeployed (verify_jwt uit), `config.js` met URL en anon key staat in de repo.
+
+Nog handmatig in het dashboard (supabase.com/dashboard/project/ynkcucbfojnzqwgxisgo):
+1. **Edge Functions > child-login > Secrets** (of Project Settings > Edge Functions): voeg `JWT_SECRET` toe met de
+   waarde van **Project Settings > API > JWT Settings > JWT Secret**. Zonder dit antwoordt de functie "Server niet klaar".
+2. **Authentication > Sign In / Providers > Email**: aan, "Confirm email" mag uit, wachtwoord niet nodig (we gebruiken enkel magic links).
+3. **Authentication > URL Configuration**: Site URL = `https://kenik.be` (voorlopig het Netlify-adres), Redirect URLs = `https://kenik.be/**` en het Netlify-adres met `/**`.
+4. Optioneel: **Authentication > Emails**: de magic-link-mail in het Nederlands zetten (onderwerp "Inloggen bij Kenik").
+
+Later nodig: een eigen SMTP (bv. Resend, gratis tot 3000 mails/maand) want de ingebouwde mailer van Supabase is beperkt tot
+een paar mails per uur en is enkel bedoeld om te testen. Authentication > SMTP Settings.
 
 ## 3. Controleren (in deze volgorde)
 

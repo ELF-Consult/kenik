@@ -27,7 +27,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 async function signChildToken(childId: string, familyId: string, deviceId: string) {
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(jwtSecret), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
   // role "child" moet in Postgres bestaan met dezelfde rechten als "authenticated": create role child; grant child to authenticator; grant usage/select/insert/update on tables (zie README)
-  return await create({ alg: "HS256", typ: "JWT" }, { role: "child", aud: "child", child_id: childId, family_id: familyId, device_id: deviceId, exp: getNumericDate(ACCESS_TTL) }, key);
+  return await create({ alg: "HS256", typ: "JWT" }, { role: "child", aud: "authenticated", child_id: childId, family_id: familyId, device_id: deviceId, exp: getNumericDate(ACCESS_TTL) }, key);
 }
 
 Deno.serve(async (req) => {

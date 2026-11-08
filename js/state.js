@@ -6,7 +6,8 @@ window.OK = window.OK || {};
 (function (OK) {
   "use strict";
   const KEY = "kenik_v1";
-  OK.uid = () => Math.random().toString(36).slice(2, 10);
+  /* echte UUID's: de database (children.id, reward_requests.id) verwacht dat formaat */
+  OK.uid = () => (crypto.randomUUID ? crypto.randomUUID() : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === "x" ? r : (r & 3 | 8)).toString(16); }));
   OK.today = () => new Date().toISOString().slice(0, 10);
   OK.nowISO = () => new Date().toISOString();
   OK.fmtDate = d => new Date(d).toLocaleDateString("nl-BE", { day: "numeric", month: "short" });
