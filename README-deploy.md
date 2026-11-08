@@ -64,3 +64,9 @@ maand (standaard 40), bijgehouden in `ai_usage`. Secrets bij de edge functions:
 - `ANTHROPIC_API_KEY`: sleutel van console.anthropic.com (verplicht; zonder sleutel meldt de app "nog niet ingesteld")
 - `AI_MODEL` (optioneel, standaard `claude-sonnet-5-5`), `AI_LIMIT` (optioneel, standaard 40)
 Kosten: ongeveer 1 tot 3 eurocent per handboekfoto, minder dan een cent per leestekst.
+
+## 7. Werkwijze: dev en main
+
+Netlify (gratis plan) rekent 15 credits per publicatie naar `main`, 300 per maand; bij 0 gaat de site op pauze.
+Daarom: alle werk op de tak `dev` (gratis voorvertoning op https://dev--kenik.netlify.app), en pas na akkoord
+samenvoegen naar `main`, hooguit een keer per dag.
