@@ -56,3 +56,11 @@ Beheerder toevoegen (SQL-editor):
 insert into admins(user_id) select id from auth.users where email = 'iemand@voorbeeld.be';
 ```
 Het tabblad verschijnt enkel voor beheerders.
+
+## 6. Foto's lezen en teksten schrijven (Claude-API)
+
+Edge function `ai` (gedeployed, verify_jwt uit; controleert zelf de oudersessie). Per gezin maximaal `AI_LIMIT` aanvragen per
+maand (standaard 40), bijgehouden in `ai_usage`. Secrets bij de edge functions:
+- `ANTHROPIC_API_KEY`: sleutel van console.anthropic.com (verplicht; zonder sleutel meldt de app "nog niet ingesteld")
+- `AI_MODEL` (optioneel, standaard `claude-sonnet-5-5`), `AI_LIMIT` (optioneel, standaard 40)
+Kosten: ongeveer 1 tot 3 eurocent per handboekfoto, minder dan een cent per leestekst.

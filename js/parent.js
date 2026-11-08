@@ -211,116 +211,135 @@
   }
 
   /* ---------- lijsten ---------- */
-  let photoVerbs = [], photoCtl = null, sampleFn = null, samplePromise = null, sampleReason = "";
-  /* Claude bereiken vanuit de pagina: kan alleen in de claude.ai-weergave; geeft anders de reden terug */
-  function sampleAvailable() {
-    if (samplePromise) return samplePromise;
-    samplePromise = (async () => {
-      try {
-        if (!window.claude || !window.claude.use) { sampleReason = "Foto's inlezen is nog niet actief op deze site. Typ of plak de woordjes voorlopig hieronder; dit komt binnenkort."; return null; }
-        const fn = await window.claude.use("sample");
-        if (!fn) { sampleReason = "Claude is in deze weergave niet beschikbaar voor de pagina. Open ze via claude.ai (de artifact-link) en probeer opnieuw."; return null; }
-        const lim = await fn.limits().catch(() => null);
-        if (!lim || !lim.images) { sampleReason = "Foto's doorsturen is in deze weergave niet mogelijk; plakken werkt wel."; return null; }
-        fn.maxImages = lim.images.maxCount; fn.accept = lim.images.mediaTypes.join(","); sampleFn = fn; return fn;
-      } catch (e) { sampleReason = "Verbinding met Claude mislukt (" + (e && e.message || "onbekend") + ")."; return null; }
-    })();
-    return samplePromise;
-  }
+  /* Eén stroom: naam en vak, dan foto's (hoofdweg) of zelf typen (inklapbaar), dan nakijken in een tabel, dan opslaan. */
+  let photoVerbs = [], photoCtl = null, draftItems = null;
+  const sampleAvailable = () => OK.ai.available();
+
   function renderLists() {
     const box = $("ptab-lists"); box.innerHTML = "";
     const kids = S().children;
-    // foto
-    const photo = el("div", "stack"); photo.id = "photo-block";
-    photo.innerHTML = `<h3>Foto van het handboek</h3><p class="muted small">Neem een foto of screenshot van de bladzijde met de woordjes, begrippen of vervoegingen. Claude leest ze uit en zet ze hieronder klaar; jij kijkt na en slaat op. Dit gebruikt je eigen Claude-account.</p>
-      <p class="small" id="photo-status"><span class="tag">Verbinding met Claude controleren...</span></p>
-      <div class="row"><label class="f" style="max-width:260px">Wat staat op de foto?<select id="ph-kind"><option value="pairs">Woordjes met vertaling of begrippen met uitleg</option><option value="pack">Woordpakket voor spelling (alleen woorden)</option></select></label><label class="f" style="max-width:200px">Vak (helpt bij het lezen)<select id="ph-subject">${OK.SUBJECTS.map(s => `<option>${s}</option>`).join("")}</select></label>
-        <button class="btn ghost" id="btn-take-photo" type="button">Foto nemen</button><button class="btn ghost" id="btn-pick-photo" type="button">Kies bestanden</button>
-        <input type="file" id="photo-input" accept="image/*" multiple class="hidden"><input type="file" id="photo-camera" accept="image/*" capture="environment" class="hidden">
-        <button class="btn" id="btn-read-photos" type="button" disabled>Lees de foto's</button><button class="btn ghost hidden" id="btn-stop-photos" type="button">Stop</button></div>
-      <div class="row thumbs" id="photo-thumbs"></div><p class="small" id="photo-msg"></p>
-      <div class="stack hidden" id="photo-verbs"><p class="muted small">Gevonden vervoegingen:</p><div class="list" id="photo-verb-list"></div><div class="row"><button class="btn mint" id="btn-add-photo-verbs" type="button">Werkwoorden toevoegen</button></div></div>`;
-    box.appendChild(photo);
-    sampleAvailable().then(fn => { const st = $("photo-status"); if (!st) return; if (!fn) { st.innerHTML = `<span class="tag bad">Niet beschikbaar</span> ${esc(sampleReason)}`; return; } st.innerHTML = `<span class="tag good">Klaar</span> Tot ${fn.maxImages} foto's per keer.`; const inp = $("photo-input"); if (inp) { inp.accept = fn.accept; inp.dataset.max = fn.maxImages; } });
-    // plakken
-    const paste = el("div", "stack", `<h3>Nieuwe lijst</h3><p class="muted small">Plak de paren, één per regel: vraag en antwoord gescheiden door een streepje, een =, een puntkomma of een tab. Meerdere juiste antwoorden scheid je met een komma. Bij een vreemde taal: eerst het Nederlands, dan de vreemde taal (of wissel de volgorde hieronder).</p>
-      <div class="row"><label class="f">Naam van de lijst<input type="text" id="wl-name" placeholder="bv. Unité 4: à l'école"></label><label class="f" style="max-width:200px">Vak<select id="wl-subject">${OK.SUBJECTS.map(s => `<option>${s}</option>`).join("")}</select></label><label class="f" style="max-width:240px">Volgorde in de tekst<select id="wl-order"><option value="q-a">vraag - antwoord (NL - Frans)</option><option value="a-q">antwoord - vraag (Frans - NL)</option></select></label></div>
-      <textarea id="wl-text" placeholder="de hond - le chien
-het huis - la maison
-zoeken - chercher"></textarea>
-      <label class="check"><input type="checkbox" id="wl-pack"><span>Dit is een woordpakket voor spelling<br><span class="muted small">Het rijtje woorden voor het dictee, zonder vertaling, één woord per regel. Wordt gebruikt bij dictee, "kies de juiste schrijfwijze" en flitswoorden.</span></span></label>
-      <div class="row"><label class="f">Voor wie<select id="wl-children"><option value="all">Iedereen</option>${kids.map(k => `<option value="${k.id}">${esc(k.name)}</option>`).join("")}</select></label><button class="btn" id="btn-add-list" type="button">Lijst opslaan</button><span class="muted small" id="wl-msg"></span></div>`);
-    box.appendChild(paste);
+    const form = el("div", "stack"); form.id = "photo-block";
+    form.innerHTML = `<h3>Nieuwe lijst</h3>
+      <div class="row"><label class="f">Naam van de lijst <span class="muted small">(mag leeg: wordt uit de foto gehaald)</span><input type="text" id="wl-name" placeholder="bv. Unité 4: à l'école"></label>
+        <label class="f" style="max-width:200px">Vak<select id="wl-subject">${OK.SUBJECTS.map(s => `<option>${s}</option>`).join("")}</select></label>
+        <label class="f" style="max-width:200px">Voor wie<select id="wl-children"><option value="all">Iedereen</option>${kids.map(k => `<option value="${k.id}">${esc(k.name)}</option>`).join("")}</select></label></div>
+      <label class="check"><input type="checkbox" id="wl-pack"><span>Woordpakket voor spelling <span class="muted small">(alleen woorden, geen vertaling; voor dictee en d/t)</span></span></label>
+      <div class="photo-cta">
+        <button class="btn big" id="btn-take-photo" type="button">📷 Foto maken of kiezen</button>
+        <span class="muted small" id="photo-status">Neem een foto van de bladzijde met de woordjes, begrippen of vervoegingen. Meerdere bladzijden mag.</span>
+        <input type="file" id="photo-input" accept="image/*" multiple class="hidden">
+      </div>
+      <div class="row thumbs" id="photo-thumbs"></div>
+      <div class="row hidden" id="photo-actions"><button class="btn mint" id="btn-read-photos" type="button">Lees de foto's</button><button class="btn ghost" id="btn-clear-photos" type="button">Foto's weg</button><button class="btn ghost hidden" id="btn-stop-photos" type="button">Stop</button></div>
+      <p class="small" id="photo-msg"></p>
+      <details id="manual-block"><summary class="muted small">Liever zelf typen of plakken?</summary>
+        <p class="muted small">Eén paar per regel: vraag en antwoord gescheiden door een streepje, =, puntkomma of tab. Meerdere juiste antwoorden met een komma. Bij een woordpakket: één woord per regel.</p>
+        <div class="row"><label class="f" style="max-width:260px">Volgorde in de tekst<select id="wl-order"><option value="q-a">vraag - antwoord</option><option value="a-q">antwoord - vraag</option></select></label></div>
+        <textarea id="wl-text" placeholder="de hond - le chien&#10;het huis - la maison&#10;zoeken - chercher"></textarea>
+        <div class="row"><button class="btn ghost" id="btn-parse-text" type="button">Zet klaar om na te kijken</button></div>
+      </details>
+      <div class="stack hidden" id="review"><h3>Nakijken</h3><p class="muted small">Verbeter wat fout gelezen is, schrap wat niet hoort. Dan opslaan.</p><div class="table-wrap"><table class="review"><thead><tr><th id="rv-h1">Vraag</th><th id="rv-h2">Antwoord</th><th></th></tr></thead><tbody id="rv-body"></tbody></table></div>
+        <div class="row"><button class="pill-btn" id="btn-add-row" type="button">+ regel</button></div>
+        <div class="stack hidden" id="photo-verbs"><p class="muted small">Gevonden vervoegingen:</p><div class="list" id="photo-verb-list"></div><div class="row"><button class="btn ghost" id="btn-add-photo-verbs" type="button">Werkwoorden toevoegen aan de voorraad</button></div></div>
+        <div class="row"><button class="btn mint big" id="btn-add-list" type="button">Lijst opslaan</button><button class="btn ghost" id="btn-drop-draft" type="button">Weg ermee</button></div><p class="small" id="wl-msg"></p></div>`;
+    box.appendChild(form);
     box.appendChild(el("h3", null, "Bestaande lijsten"));
     const list = el("div", "list");
-    S().lists.forEach(l => {
-      const d = el("div", "item", `<span><strong>${esc(l.name)}</strong> <span class="muted">${l.pack ? "woordpakket" : esc(l.subject || "")} · ${l.items.length} ${l.pack ? "woorden" : "paren"} · ${esc(OK.childName(l.children === "all" || !l.children ? "all" : l.children[0]))}${l.example ? " · voorbeeld" : ""}</span><br><span class="muted small">${l.items.slice(0, 4).map(w => esc(w[0])).join(", ")}${l.items.length > 4 ? "…" : ""}</span></span>`);
+    S().lists.slice().reverse().forEach(l => {
+      const d = el("div", "item", `<span><strong>${esc(l.name)}</strong> <span class="muted">${l.pack ? "woordpakket" : esc(l.subject || "")} · ${l.items.length} ${l.pack ? "woorden" : "paren"} · ${esc(OK.childName(l.children === "all" || !l.children ? "all" : l.children[0]))}${l.example ? " · voorbeeld" : ""}</span></span>`);
       const r = el("div", "row");
       const who = el("select"); who.innerHTML = `<option value="all">Iedereen</option>${kids.map(k => `<option value="${k.id}" ${Array.isArray(l.children) && l.children[0] === k.id ? "selected" : ""}>${esc(k.name)}</option>`).join("")}`; who.style.width = "auto"; who.addEventListener("change", () => { l.children = who.value === "all" ? "all" : [who.value]; OK.save(); });
-      const x = el("button", "x", "✕"); x.type = "button"; x.title = "Lijst verwijderen"; x.addEventListener("click", () => { if (x.dataset.armed) { S().lists = S().lists.filter(q => q !== l); OK.save(); renderLists(); } else { x.dataset.armed = "1"; x.textContent = "zeker?"; setTimeout(() => { delete x.dataset.armed; x.textContent = "✕"; }, 3000); } });
+      const x = el("button", "x", "✕"); x.type = "button"; x.title = "Lijst verwijderen"; x.addEventListener("click", () => { if (x.dataset.armed) { S().lists = S().lists.filter(q => q !== l); OK.save(); renderLists(); } else { x.dataset.armed = "1"; x.textContent = "Zeker?"; setTimeout(() => { delete x.dataset.armed; x.textContent = "✕"; }, 2500); } });
       r.append(who, x); d.appendChild(r); list.appendChild(d);
     });
     if (!S().lists.length) list.appendChild(el("p", "muted small", "Nog geen lijsten."));
     box.appendChild(list);
     renderTexts(box);
-    // handlers
-    $("wl-subject").addEventListener("change", () => { const s = $("wl-subject").value; const foreign = OK.langFor(s) !== "nl"; $("wl-order").options[0].text = foreign ? `vraag - antwoord (NL - ${s})` : "vraag - antwoord"; $("wl-order").options[1].text = foreign ? `antwoord - vraag (${s} - NL)` : "antwoord - vraag"; });
-    $("btn-add-list").addEventListener("click", () => {
-      const name = $("wl-name").value.trim(), pack = $("wl-pack").checked, subject = pack ? "Nederlands" : $("wl-subject").value;
-      const items = pack ? $("wl-text").value.split(/\r?\n|,|;/).map(w => w.trim().toLowerCase()).filter(Boolean).map(w => [w, w]) : OK.parseList($("wl-text").value, $("wl-order").value);
-      if (!name) { $("wl-msg").textContent = "Geef de lijst een naam."; return; } if (!items.length) { $("wl-msg").textContent = pack ? "Geen woorden herkend. Eén per regel." : "Geen paren herkend. Eén per regel, met een streepje ertussen."; return; }
-      const who = $("wl-children").value;
-      S().lists.push({ id: OK.uid(), name, subject, lang: OK.langFor(subject), children: who === "all" ? "all" : [who], items, pack }); OK.save();
-      let nv = 0; S().children.forEach(c => { nv += OK.syncVerbsFromLists(c) || 0; });
-      renderLists(); OK.toast(`${items.length} ${pack ? "woorden" : "paren"} opgeslagen${nv ? `, ${nv} werkwoord${nv > 1 ? "en" : ""} toegevoegd aan de werkwoordenoefening` : ""}.`);
-    });
+
+    /* ---- handlers ---- */
+    const foreignLabels = () => { const s = $("wl-subject").value, foreign = OK.langFor(s) !== "nl"; $("wl-order").options[0].text = foreign ? `Nederlands - ${s}` : "vraag - antwoord"; $("wl-order").options[1].text = foreign ? `${s} - Nederlands` : "antwoord - vraag"; $("rv-h1").textContent = $("wl-pack").checked ? "Woord" : foreign ? "Nederlands" : "Vraag"; $("rv-h2").textContent = foreign ? s : "Antwoord"; $("rv-h2").parentElement.classList.toggle("pack", $("wl-pack").checked); };
+    $("wl-subject").addEventListener("change", foreignLabels); $("wl-pack").addEventListener("change", () => { if ($("wl-pack").checked) $("wl-subject").value = "Nederlands"; foreignLabels(); if (draftItems) showReview(); }); foreignLabels();
+
     let chosen = [];
-    const showFiles = () => { const th = $("photo-thumbs"); th.innerHTML = ""; chosen.slice(0, 8).forEach(f => { const img = document.createElement("img"); img.src = URL.createObjectURL(f); img.onload = () => URL.revokeObjectURL(img.src); th.appendChild(img); }); $("btn-read-photos").disabled = !chosen.length; const max = +$("photo-input").dataset.max || 4; $("photo-msg").textContent = chosen.length ? (chosen.length > max ? `Maximaal ${max} foto's per keer; de eerste ${max} worden gelezen.` : `${chosen.length} foto${chosen.length > 1 ? "'s" : ""} gekozen. Klik op "Lees de foto's".`) : ""; };
-    $("btn-take-photo").addEventListener("click", () => $("photo-camera").click());
-    $("btn-pick-photo").addEventListener("click", () => $("photo-input").click());
-    $("photo-input").addEventListener("change", () => { chosen = chosen.concat([...$("photo-input").files]); showFiles(); });
-    $("photo-camera").addEventListener("change", () => { chosen = chosen.concat([...$("photo-camera").files]); showFiles(); });
-    photo.getFiles = () => chosen; photo.clearFiles = () => { chosen = []; showFiles(); };
+    const showFiles = () => { const th = $("photo-thumbs"); th.innerHTML = ""; chosen.slice(0, 6).forEach(f => { const img = document.createElement("img"); img.src = URL.createObjectURL(f); img.onload = () => URL.revokeObjectURL(img.src); th.appendChild(img); }); $("photo-actions").classList.toggle("hidden", !chosen.length); if (chosen.length) $("photo-msg").textContent = `${chosen.length} foto${chosen.length > 1 ? "'s" : ""} klaar. Klik op "Lees de foto's".`; };
+    $("btn-take-photo").addEventListener("click", () => $("photo-input").click());
+    $("photo-input").addEventListener("change", () => { chosen = chosen.concat([...$("photo-input").files]).slice(0, 6); $("photo-input").value = ""; showFiles(); });
+    $("btn-clear-photos").addEventListener("click", () => { chosen = []; showFiles(); $("photo-msg").textContent = ""; });
+    form.getFiles = () => chosen; form.clearFiles = () => { chosen = []; showFiles(); };
     $("btn-stop-photos").addEventListener("click", () => { if (photoCtl) photoCtl.abort(); });
     $("btn-read-photos").addEventListener("click", readPhotos);
-    $("btn-add-photo-verbs").addEventListener("click", () => { let n = 0; photoVerbs.forEach(v => { if ((v.lang || "fr") !== "fr") return; const forms = Array.isArray(v.forms) && v.forms.length === 6 ? v.forms.map(String) : null; if (OK.addVerb(String(v.inf), v.nl || "", forms)) n++; }); $("photo-msg").textContent = `${n} Franse werkwoorden toegevoegd. Zet ze aan bij het kind onder Kinderen, of onder Werkwoorden.`; $("photo-verbs").classList.add("hidden"); photoVerbs = []; });
+    sampleAvailable().then(fn => { const st = $("photo-status"); if (!st) return; if (!fn) { st.innerHTML = `<span class="tag bad">Niet beschikbaar</span> ${esc(OK.ai.reason)}`; $("btn-take-photo").disabled = true; $("manual-block").open = true; } });
+
+    $("btn-parse-text").addEventListener("click", () => {
+      const pack = $("wl-pack").checked;
+      const items = pack ? $("wl-text").value.split(/\r?\n|,|;/).map(w => w.trim()).filter(Boolean).map(w => ({ q: w, a: w })) : OK.parseList($("wl-text").value, $("wl-order").value).map(p => ({ q: p[0], a: p[1] }));
+      if (!items.length) { $("photo-msg").textContent = pack ? "Geen woorden herkend. Eén per regel." : "Geen paren herkend. Eén per regel, met een streepje ertussen."; return; }
+      draftItems = items; photoVerbs = []; showReview(); $("photo-msg").textContent = "";
+    });
+    $("btn-add-row").addEventListener("click", () => { draftItems = draftItems || []; draftItems.push({ q: "", a: "" }); showReview(); const rows = $("rv-body").querySelectorAll("tr"); const inp = rows[rows.length - 1].querySelector("input"); if (inp) inp.focus(); });
+    $("btn-drop-draft").addEventListener("click", () => { draftItems = null; photoVerbs = []; $("review").classList.add("hidden"); $("wl-msg").textContent = ""; });
+    $("btn-add-list").addEventListener("click", () => {
+      readReview(); const pack = $("wl-pack").checked, subject = pack ? "Nederlands" : $("wl-subject").value;
+      const items = (draftItems || []).map(x => pack ? [x.q.trim().toLowerCase(), x.q.trim().toLowerCase()] : [x.q.trim(), x.a.trim()]).filter(p => p[0] && p[1]);
+      const name = $("wl-name").value.trim() || (pack ? "Woordpakket" : subject + " " + OK.fmtDate(OK.today()));
+      if (!items.length) { $("wl-msg").textContent = "Er staat niets om op te slaan."; return; }
+      const who = $("wl-children").value;
+      S().lists.push({ id: OK.uid(), name, subject, lang: OK.langFor(subject), children: who === "all" ? "all" : [who], items, pack, created: OK.nowISO() }); OK.save();
+      let nv = 0; S().children.forEach(c => { nv += OK.syncVerbsFromLists(c) || 0; });
+      draftItems = null; photoVerbs = []; renderLists(); OK.toast(`${items.length} ${pack ? "woorden" : "paren"} opgeslagen${nv ? `, ${nv} werkwoord${nv > 1 ? "en" : ""} toegevoegd aan de werkwoordenoefening` : ""}.`);
+    });
+    $("btn-add-photo-verbs").addEventListener("click", () => { let n = 0; photoVerbs.forEach(v => { if ((v.lang || "fr") !== "fr") return; const forms = Array.isArray(v.forms) && v.forms.length === 6 ? v.forms.map(String) : null; if (OK.addVerb(String(v.inf), String(v.nl || ""), forms)) n++; }); OK.toast(n ? `${n} werkwoord${n > 1 ? "en" : ""} toegevoegd.` : "Geen nieuwe werkwoorden."); $("photo-verbs").classList.add("hidden"); });
+    if (draftItems) showReview();
   }
+  /* de nakijktabel tekenen vanuit draftItems en terug inlezen */
+  function showReview() {
+    const pack = $("wl-pack").checked, tb = $("rv-body"); tb.innerHTML = "";
+    (draftItems || []).forEach((it, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td><input type="text" data-q value="${esc(it.q)}"></td><td class="${pack ? "hidden" : ""}"><input type="text" data-a value="${esc(it.a)}"></td><td><button class="x" type="button" title="Schrappen">✕</button></td>`;
+      tr.querySelector(".x").addEventListener("click", () => { readReview(); draftItems.splice(i, 1); showReview(); });
+      tb.appendChild(tr);
+    });
+    $("rv-h2").classList.toggle("hidden", pack);
+    const vb = $("photo-verbs"), vl = $("photo-verb-list"); vl.innerHTML = ""; vb.classList.toggle("hidden", !photoVerbs.length);
+    photoVerbs.forEach(v => vl.appendChild(el("div", "item", `<span><strong>${esc(v.inf)}</strong> <span class="muted">${esc(v.nl || "")}</span><br><span class="muted small">${Array.isArray(v.forms) && v.forms.length === 6 ? esc(v.forms.join(", ")) : "wordt uit de ingebouwde catalogus gehaald"}</span></span>`)));
+    $("review").classList.remove("hidden");
+  }
+  function readReview() { draftItems = [...$("rv-body").querySelectorAll("tr")].map(tr => ({ q: tr.querySelector("[data-q]").value, a: (tr.querySelector("[data-a]") || {}).value || tr.querySelector("[data-q]").value })); }
+
   async function readPhotos() {
-    const fn = await sampleAvailable(); if (!fn) { $("photo-msg").textContent = sampleReason; return; }
-    const files = $("photo-block").getFiles().slice(0, +$("photo-input").dataset.max || 4); if (!files.length) return;
-    const msg = $("photo-msg"), btn = $("btn-read-photos"); btn.disabled = true; $("btn-stop-photos").classList.remove("hidden"); msg.textContent = "Claude leest de foto's. Dit duurt meestal 10 tot 40 seconden.";
+    const fn = await sampleAvailable(); if (!fn) { $("photo-msg").textContent = OK.ai.reason; return; }
+    const files = $("photo-block").getFiles().slice(0, fn.maxImages || 4); if (!files.length) return;
+    const msg = $("photo-msg"), btn = $("btn-read-photos"); btn.disabled = true; $("btn-stop-photos").classList.remove("hidden"); msg.textContent = "De foto's worden gelezen. Dit duurt meestal 10 tot 40 seconden.";
     photoCtl = new AbortController();
     try {
-      const wantPack = $("ph-kind").value === "pack";
-      const data = await fn.json(wantPack ? OK.packPrompt() : OK.photoPrompt($("ph-subject").value), { images: files, signal: photoCtl.signal, cache: false });
+      const wantPack = $("wl-pack").checked;
+      const data = await fn.json(wantPack ? OK.packPrompt() : OK.photoPrompt($("wl-subject").value), { images: files, signal: photoCtl.signal });
       let items; if (wantPack) { const words = Array.isArray(data.words) ? data.words.map(w => String(w).trim()).filter(Boolean) : []; items = words.map(w => ({ q: w, a: w })); photoVerbs = []; }
-      else { items = Array.isArray(data.items) ? data.items.filter(w => w && w.q && w.a) : []; photoVerbs = Array.isArray(data.verbs) ? data.verbs.filter(v => v && v.inf) : []; }
-      const isPack = wantPack || (items.length && items.every(w => String(w.q).trim().toLowerCase() === String(w.a).trim().toLowerCase()));
-      $("wl-pack").checked = !!isPack;
-      if (items.length) { $("wl-name").value = $("wl-name").value || data.title || "Nieuwe lijst"; if (OK.SUBJECTS.includes(data.subject)) $("wl-subject").value = data.subject; else $("wl-subject").value = $("ph-subject").value; $("wl-order").value = "q-a"; $("wl-text").value = isPack ? items.map(w => String(w.q).trim()).join("\n") : items.map(w => `${String(w.q).trim()} - ${String(w.a).trim()}`).join("\n"); }
-      const vb = $("photo-verbs"), vl = $("photo-verb-list"); vl.innerHTML = ""; vb.classList.toggle("hidden", !photoVerbs.length);
-      photoVerbs.forEach(v => vl.appendChild(el("div", "item", `<span><strong>${esc(v.inf)}</strong> <span class="muted">${esc(v.nl || "")}</span><br><span class="muted small">${Array.isArray(v.forms) && v.forms.length === 6 ? esc(v.forms.join(", ")) : "wordt automatisch vervoegd"}</span></span>`)));
+      else { items = Array.isArray(data.items) ? data.items.filter(w => w && w.q && w.a).map(w => ({ q: String(w.q), a: String(w.a) })) : []; photoVerbs = Array.isArray(data.verbs) ? data.verbs.filter(v => v && v.inf) : []; }
+      if (!wantPack && items.length && items.every(w => w.q.trim().toLowerCase() === w.a.trim().toLowerCase())) { $("wl-pack").checked = true; $("wl-subject").value = "Nederlands"; }
+      if (items.length) { if (!$("wl-name").value.trim() && data.title) $("wl-name").value = String(data.title); if (!wantPack && OK.SUBJECTS.includes(data.subject)) $("wl-subject").value = data.subject; $("wl-subject").dispatchEvent(new Event("change")); }
+      draftItems = (draftItems || []).concat(items); showReview();
       if (items.length || photoVerbs.length) $("photo-block").clearFiles();
-      msg.textContent = items.length || photoVerbs.length ? `${items.length} ${isPack ? "woorden" : "paren"}${photoVerbs.length ? ` en ${photoVerbs.length} werkwoorden` : ""} gevonden. Kijk de lijst na, verbeter wat fout is en klik op "Lijst opslaan".` : "Niets herkend. Probeer een scherpere foto, recht van boven, met goed licht.";
-    } catch (e) {
-      const c = e && e.code; msg.textContent = c === "cancelled" ? "Gestopt." : c === "not_granted" ? "Je gaf de pagina geen toegang tot Claude. Plakken werkt wel nog." : c === "rate_limited" ? "Even te veel gevraagd. Probeer het over een paar minuten opnieuw." : c === "image_rejected" ? "Die foto kon niet gelezen worden. Probeer een JPG of PNG, kleiner dan 20 MB." : c === "invalid_json" ? "Het antwoord was niet bruikbaar. Probeer het nog eens, liefst met één bladzijde per keer." : "Dat lukte niet. Probeer het straks nog eens, of plak de woordjes zelf.";
-    } finally { btn.disabled = false; $("btn-stop-photos").classList.add("hidden"); photoCtl = null; }
+      msg.textContent = items.length || photoVerbs.length ? `${items.length} ${wantPack ? "woorden" : "paren"}${photoVerbs.length ? ` en ${photoVerbs.length} werkwoorden` : ""} gevonden${OK.ai.limit ? ` (${OK.ai.used} van ${OK.ai.limit} deze maand)` : ""}. Kijk na en klik op "Lijst opslaan".` : "Niets herkend. Probeer een scherpere foto, recht van boven, met goed licht.";
+      $("review").scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (e) { msg.textContent = OK.ai.errorText(e, "Lezen mislukt."); }
+    finally { btn.disabled = false; $("btn-stop-photos").classList.add("hidden"); photoCtl = null; }
   }
 
-  /* ---------- leesteksten ---------- */
   let textDraft = null;
   function renderTexts(box) {
     const kids = S().children; S().texts = S().texts || [];
     box.appendChild(el("h3", null, "Leesteksten voor begrijpend lezen"));
-    box.appendChild(el("p", "muted small", "Claude schrijft een korte tekst op maat van het leerjaar, met vier meerkeuzevragen. Jij leest na en slaat op; pas dan ziet het kind ze. Werkt enkel als de pagina in claude.ai open staat."));
+    box.appendChild(el("p", "muted small", "Een korte tekst op maat van het leerjaar, met vier meerkeuzevragen. Jij leest na en slaat op; pas dan ziet het kind ze."));
     const form = el("div", "row", `<label class="f">Onderwerp<input type="text" id="tx-topic" placeholder="bv. vulkanen, de Romeinen, een verhaal over een verdwaalde hond"></label><label class="f" style="max-width:170px">Leerjaar<select id="tx-grade">${GRADES.slice(0, 8).map(g => `<option value="${g[0]}" ${g[0] === 4 ? "selected" : ""}>${g[1]}</option>`).join("")}</select></label><label class="f" style="max-width:200px">Soort<select id="tx-kind"><option value="info">informatieve tekst</option><option value="verhaal">verhaal</option></select></label>`);
-    const gen = el("button", "btn", "Schrijf tekst met Claude"); gen.type = "button"; form.appendChild(gen); box.appendChild(form);
+    const gen = el("button", "btn", "Schrijf een tekst"); gen.type = "button"; form.appendChild(gen); box.appendChild(form);
     const msg = el("p", "small"); box.appendChild(msg);
     const preview = el("div", "stack hidden"); box.appendChild(preview);
     gen.addEventListener("click", async () => {
       const topic = $("tx-topic").value.trim(); if (!topic) { msg.textContent = "Geef een onderwerp."; return; }
-      const fn = await sampleAvailable(); if (!fn) { msg.textContent = sampleReason; return; }
-      gen.disabled = true; msg.textContent = "Claude schrijft. Dit duurt meestal 15 tot 40 seconden.";
+      const fn = await sampleAvailable(); if (!fn) { msg.textContent = OK.ai.reason; return; }
+      gen.disabled = true; msg.textContent = "De tekst wordt geschreven. Dit duurt meestal 15 tot 40 seconden.";
       const grade = +$("tx-grade").value, kind = $("tx-kind").value;
       try {
         const data = await fn.json(`Schrijf een ${kind === "verhaal" ? "kort verhaal" : "korte informatieve tekst"} in het Nederlands (Vlaanderen) voor een leerling uit het ${OK.gradeName(grade)} over: ${topic}.
@@ -338,7 +357,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
         save.addEventListener("click", () => { const who = $("tx-children").value; textDraft.children = who === "all" ? "all" : [who]; S().texts.push(textDraft); OK.save(); textDraft = null; renderLists(); });
         drop.addEventListener("click", () => { textDraft = null; preview.classList.add("hidden"); preview.innerHTML = ""; });
         msg.textContent = "Lees na. Het onderstreepte antwoord is het juiste.";
-      } catch (e) { const c = e && e.code; msg.textContent = c === "not_granted" ? "Je gaf de pagina geen toegang tot Claude." : c === "rate_limited" ? "Even te veel gevraagd. Probeer het over een paar minuten opnieuw." : c === "invalid_json" ? "Het antwoord was niet bruikbaar. Probeer het nog eens." : "Dat lukte niet. Probeer het straks nog eens."; }
+      } catch (e) { msg.textContent = OK.ai.errorText(e, "Schrijven mislukt."); }
       finally { gen.disabled = false; }
     });
     const tl = el("div", "list");

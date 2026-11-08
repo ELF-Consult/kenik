@@ -331,3 +331,12 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .list-search{margin-bottom:6px}
 .lgroup>summary{cursor:pointer;padding:8px 4px}
 .lgroup .list{padding:4px 0 8px 10px;border-left:2px solid var(--line);margin-left:6px}
+
+/* nieuwe lijst: foto eerst */
+.photo-cta{display:flex;flex-direction:column;gap:8px;align-items:flex-start;padding:14px;border:2px dashed var(--line);border-radius:14px}
+.btn.big{font-size:18px;padding:14px 22px}
+.thumbs img{height:72px;border-radius:8px;border:1px solid var(--line)}
+#manual-block>summary{cursor:pointer;padding:6px 0}
+table.review input{width:100%;min-width:120px;padding:8px 10px;height:auto}
+table.review td{padding:4px 4px}
+table.review th.hidden{display:none}
