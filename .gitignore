@@ -1,0 +1,4 @@
+node_modules/
+.DS_Store
+# kenik.html is enkel het fragment voor de claude.ai-artifact; de site gebruikt index.html
+kenik.html

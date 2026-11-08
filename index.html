@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b1f3a">
+<title>Kenik</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Manrope:wght@600;700;800&family=Fredoka:wght@500;600;700&family=Nunito:wght@700;800&display=swap">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M26 4 C16 6 8 14 6 26 l2 2 C20 24 27 15 28 6z" fill="#ffb830"/><path d="M26 4 C16 6 8 14 6 26" stroke="#c97f00" stroke-width="1.5" fill="none"/><path d="M8 24 L26 6" stroke="#fff3cf" stroke-width="1.6" stroke-linecap="round"/><path d="M12 20 l6 -1 M15 16 l6 -1 M18 12 l5 -1" stroke="#fff3cf" stroke-width="1.2" stroke-linecap="round"/></svg><span id="brand-name">Kenik</span></div>
+    <div class="row">
+      <div class="coins hidden" id="coins"><span class="coin"></span><span id="coin-count">0</span></div>
+      <button class="whobadge hidden" id="btn-switch" type="button" title="Ander kind kiezen"><span id="who-avatar"></span><span id="who-name"></span><span class="who-sub" id="who-sub"></span></button>
+      <button class="pill-btn" id="btn-parent" type="button" data-i18n="parents">Ouders</button>
+      <button class="pill-btn hidden" id="btn-logout" type="button">Afmelden</button>
+    </div>
+  </div>
+
+  <!-- Aanmelden -->
+  <section class="stack hidden" id="s-landing">
+    <div class="hero">
+      <h1 class="hero-title">Ken ik 't?</h1>
+      <p class="hero-sub">Kenik vraagt je kinderen hun leerstof af, zodat jij dat niet elke avond zelf hoeft te doen. Jij kiest wat ze moeten kennen, zij oefenen en verdienen, en jij ziet of het er echt in zit.</p>
+    </div>
+    <div class="grid2">
+      <button class="card stack landing-btn" id="btn-land-parent" type="button"><span class="land-icon" style="background:var(--blue)"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="19" cy="11" r="6.5" fill="#fff"/><path d="M8 40 v-12 c0 -7 5 -10 11 -10 s11 3 11 10 v12 z" fill="#fff"/><circle cx="36" cy="22" r="4.5" fill="#fff"/><path d="M29.5 40 v-6 c0 -5 3 -7.5 6.5 -7.5 s6.5 2.5 6.5 7.5 v6 z" fill="#fff" stroke="var(--blue)" stroke-width="2"/></svg></span><h2>Ik ben ouder</h2><p class="muted small">Inloggen met je e-mail. Kinderen toevoegen, lijsten maken, opdrachten geven, resultaten bekijken.</p></button>
+      <button class="card stack landing-btn" id="btn-land-child" type="button"><span class="land-icon" style="background:var(--mint)"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M12 22 c0 -9 5 -14 12 -14 s12 5 12 14 z" fill="#1b6b45"/><circle cx="24" cy="24" r="10.5" fill="#fff"/><path d="M13.5 22 c1 -5 4 -8 10.5 -8 c3 0 5 1.5 6 3 c-2 1.5 -8 3 -16.5 5 z" fill="#1b6b45"/><circle cx="20" cy="24.5" r="1.6" fill="#1b6b45"/><circle cx="28" cy="24.5" r="1.6" fill="#1b6b45"/><path d="M20 29 q4 3.5 8 0" stroke="#1b6b45" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M11 44 c0 -7 6 -10 13 -10 s13 3 13 10 z" fill="#fff"/></svg></span><h2>Ik ben een kind</h2><p class="muted small">Scan de QR-code van papa of mama, of typ de korte code.</p></button>
+    </div>
+    <div class="card stack hidden" id="land-parent">
+      <h3>Inloggen als ouder</h3>
+      <p class="muted small">Je krijgt een inloglink per e-mail. Geen wachtwoord nodig.</p>
+      <div class="row"><input type="email" id="land-email" placeholder="jouw e-mailadres" style="max-width:320px" autocomplete="email"><button class="btn" id="btn-land-login" type="button">Stuur inloglink</button></div>
+      <p class="small" id="land-parent-msg"></p>
+    </div>
+    <div class="card stack hidden" id="land-child">
+      <h3>Hallo! Hoe heet je code?</h3>
+      <p class="muted small">Papa of mama vindt jouw code in het ouderpaneel bij jouw naam. Hij ziet er zo uit: LIV-4K7P.</p>
+      <div class="row"><input type="text" id="land-code" placeholder="bv. LIV-4K7P" style="max-width:220px;text-transform:uppercase;font-family:var(--font-display);font-size:22px" autocomplete="off" autocapitalize="characters"><button class="btn mint" id="btn-land-code" type="button">Ga verder</button><button class="btn ghost hidden" id="btn-land-scan" type="button">QR scannen</button></div>
+      <div id="land-scan" class="hidden"><video id="land-video" playsinline style="width:100%;max-width:360px;border-radius:12px"></video></div>
+      <p class="small" id="land-child-msg"></p>
+    </div>
+    <div class="card stack hidden" id="land-device">
+      <h3>Is dit een gezinstoestel?</h3>
+      <p class="muted small">Op een gezinstoestel (de tablet in de living) blijven de kinderen aangemeld en kiezen ze gewoon hun naam. Op jouw eigen telefoon of laptop kies je beter "nee": dan open je meteen het ouderpaneel.</p>
+      <div class="row"><button class="btn" id="btn-dev-family" type="button">Ja, gezinstoestel</button><button class="btn ghost" id="btn-dev-parent" type="button">Nee, alleen voor mij</button></div>
+    </div>
+  </section>
+
+  <!-- Wie ben jij -->
+  <section class="card stack hidden" id="s-who">
+    <h2 data-i18n="who">Wie ben jij?</h2>
+    <div class="players" id="players"></div>
+    <p class="muted small" id="who-hint" data-i18n="who_hint">Nog geen kinderen. Klik op "Ouders" om een kind toe te voegen.</p>
+  </section>
+
+  <!-- Thuis -->
+  <section class="stack hidden" id="s-home">
+    <section class="garden hidden" id="garden"></section>
+    <div class="card stack hidden" id="todo-card" style="border-color:var(--coin)">
+      <div class="q-head"><h3 id="todo-title">Te doen</h3><span class="tag warn" id="todo-count"></span></div>
+      <div class="list" id="todo-list"></div>
+    </div>
+    <div class="card stack" id="home-stats">
+      <div class="q-head"><h2 id="hello"></h2><span class="tag" id="streak-tag"></span></div>
+      <div class="stats">
+        <div class="stat"><b id="st-today">0</b><span data-i18n="today">oefeningen vandaag</span></div>
+        <div class="stat"><b id="st-goal">0</b><span data-i18n="goal">dagdoel</span></div>
+        <div class="stat"><b id="st-week">0</b><span data-i18n="week">plumkes deze week</span></div>
+        <div class="stat"><b id="st-best">0</b><span data-i18n="best">beste reeks</span></div>
+      </div>
+      <div class="bar"><i id="goal-bar"></i></div>
+      <p class="muted small" id="goal-text"></p>
+    </div>
+    <div class="card stack">
+      <div class="q-head"><h3 id="practice-title">Oefenen</h3><span class="muted small" id="practice-sub"></span></div>
+      <div class="modbtns" id="practice-btns"></div>
+    </div>
+    <div class="card stack" id="test-card">
+      <div class="q-head"><h3 data-i18n="test">Toets</h3><span class="muted small" data-i18n="test_sub">Zonder hints, score op het einde, bonus bij 90% of meer.</span></div>
+      <div class="modbtns" id="test-btns"></div>
+    </div>
+    <div class="card stack" id="shop-card">
+      <div class="q-head"><h3 data-i18n="shop">De winkel</h3><button class="pill-btn" id="btn-shop" type="button" data-i18n="shop_all">Alles bekijken</button></div>
+      <div class="shop" id="shop-preview"></div>
+    </div>
+  </section>
+
+  <!-- Instellen voor een beurt -->
+  <section class="card stack hidden" id="s-setup">
+    <h2 id="setup-title"></h2>
+    <p class="muted small" id="setup-hint">Vink aan wat je nu wil oefenen, of kies <button class="linklike" type="button" id="setup-all">alles</button>.</p>
+    <div class="stack" id="setup-fields"></div>
+    <label class="f" id="setup-count-wrap" style="max-width:200px"><span data-i18n="how_many">Hoeveel vragen?</span><select id="setup-count"><option value="10">10</option><option value="15" selected>15</option><option value="20">20</option><option value="30">30</option></select></label>
+    <div class="row"><button class="btn mint big" id="btn-go" type="button" data-i18n="start">Start</button><button class="btn ghost" data-go="home" type="button" data-i18n="back">Terug</button></div>
+  </section>
+
+  <!-- Spelen -->
+  <section class="card stack hidden" id="s-play">
+    <div class="q-head"><span class="muted" id="play-progress"></span><span class="tag" id="play-mode"></span></div>
+    <div class="bar"><i id="play-bar"></i></div>
+    <div class="playgrow hidden" id="play-grow"></div>
+    <div class="q" id="question"></div>
+    <div class="stack" id="input-area"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="hint hidden" id="hint"></div>
+    <div class="row between"><button class="btn ghost" id="btn-skip" type="button" data-i18n="dont_know">Weet ik niet</button><button class="btn ghost" id="btn-quit" type="button" data-i18n="stop">Stoppen</button></div>
+  </section>
+
+  <!-- Resultaat -->
+  <section class="card stack hidden" id="s-result">
+    <h2 id="result-title"></h2>
+    <div class="stats" id="result-stats"></div>
+    <div id="result-list" class="list"></div>
+    <div class="row"><button class="btn" id="btn-again" type="button" data-i18n="again">Nog eens</button><button class="btn ghost" data-go="home" type="button" data-i18n="home">Naar start</button></div>
+  </section>
+
+  <!-- Winkel -->
+  <section class="card stack hidden" id="s-shop">
+    <div class="q-head"><h2 data-i18n="shop">De winkel</h2><button class="btn ghost" data-go="home" type="button" data-i18n="back">Terug</button></div>
+    <p class="muted small" data-i18n="shop_hint">Je wisselt plumkes in; papa of mama keurt het goed. Tot dan staat het op "aangevraagd".</p>
+    <div class="shop" id="shop"></div>
+    <h3 data-i18n="my_requests">Mijn aanvragen</h3>
+    <div class="list" id="my-requests"></div>
+  </section>
+
+  <!-- Oudercode -->
+  <section class="card stack hidden" id="s-pin">
+    <h2 data-i18n="parent_panel">Ouderpaneel</h2>
+    <p class="muted small" id="pin-text"></p>
+    <div class="row" style="max-width:320px"><input type="password" id="pin" inputmode="numeric" maxlength="6" placeholder="code" style="flex:1"><button class="btn" id="btn-pin" type="button">OK</button></div>
+    <p class="small" id="pin-error" style="color:var(--rose)"></p>
+    <button class="btn ghost" data-go="back" type="button">Terug</button>
+  </section>
+
+  <!-- Ouderpaneel -->
+  <section class="stack hidden" id="s-parent">
+    <div class="card stack">
+      <div class="q-head"><h2 data-i18n="parent_panel">Ouderpaneel</h2><button class="btn ghost" id="btn-parent-exit" type="button" data-i18n="close">Sluiten</button></div>
+      <div class="tabs" id="ptabs">
+        <button class="tab active" data-tab="kids" type="button" data-i18n="tab_kids">Kinderen</button>
+        <button class="tab" data-tab="tasks" type="button" data-i18n="tab_tasks">Opdrachten</button>
+        <button class="tab" data-tab="rewards" type="button" data-i18n="tab_rewards">Beloningen</button>
+        <button class="tab" data-tab="lists" type="button" data-i18n="tab_lists">Lijsten</button>
+        <button class="tab" data-tab="verbs" type="button" data-i18n="tab_verbs">Werkwoorden</button>
+        <button class="tab" data-tab="results" type="button" data-i18n="tab_results">Resultaten</button>
+        <button class="tab" data-tab="family" type="button">Gezin</button>
+        <button class="tab" data-tab="settings" type="button" data-i18n="tab_settings">Instellingen</button>
+      </div>
+    </div>
+    <div class="card stack ptab" id="ptab-kids"></div>
+    <div class="card stack ptab hidden" id="ptab-tasks"></div>
+    <div class="card stack ptab hidden" id="ptab-lists"></div>
+    <div class="stack ptab hidden" id="ptab-verbs"></div>
+    <div class="stack ptab hidden" id="ptab-rewards"></div>
+    <div class="card stack ptab hidden" id="ptab-results"></div>
+    <div class="card stack ptab hidden" id="ptab-family"></div>
+    <div class="card stack ptab hidden" id="ptab-settings"></div>
+  </section>
+</div>
+
+<div class="overlay hidden" id="overlay">
+  <div class="ocard">
+    <div class="big-fig" id="overlay-fig"></div>
+    <h2 id="overlay-title"></h2>
+    <p id="overlay-text"></p>
+    <div class="row" style="justify-content:center;margin-top:18px">
+      <button class="btn big" id="btn-overlay-ok" type="button" data-i18n="next">Verder</button>
+    </div>
+  </div>
+</div>
+<div class="confetti" id="confetti"></div>
+
+<script src="js/state.js"></script>
+<script src="js/i18n.js"></script>
+<!-- echte backend: alleen actief op de eigen site, als config.js bestaat (zie README-deploy.md) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.45.4/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="js/backend-supabase.js"></script>
+<script src="js/auth.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/themes.js"></script>
+<script src="js/content/lists.js"></script>
+<script src="js/content/frans.js"></script>
+<script src="js/content/engels.js"></script>
+<script src="js/content/rekenen.js"></script>
+<script src="js/content/kaart.js"></script>
+<script src="js/content/meetkunde.js"></script>
+<script src="js/content/ordenen.js"></script>
+<script src="js/content/taal.js"></script>
+<script src="js/parent.js"></script>
+<script src="js/ui.js"></script>
+
+</body>
+</html>
