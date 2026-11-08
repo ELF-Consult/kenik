@@ -394,7 +394,7 @@
     $("btn-land-scan").classList.toggle("hidden", !("BarcodeDetector" in window && navigator.mediaDevices));
     OK.show("s-landing");
   }
-  $("btn-land-parent").addEventListener("click", () => { renderLanding("land-parent"); $("land-email").focus(); });
+  $("btn-land-parent").addEventListener("click", () => { renderLanding("land-parent"); $("land-email").focus(); $("land-parent-msg").innerHTML = OK.backend.mode === "supabase" ? "" : `<span class="muted">Testmodus: er wordt geen mail verstuurd, alles blijft in deze browser.</span>`; });
   $("btn-land-child").addEventListener("click", () => { renderLanding("land-child"); $("land-code").focus(); });
   $("btn-land-login").addEventListener("click", async () => {
     const email = $("land-email").value.trim().toLowerCase(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $("land-parent-msg").textContent = "Dat lijkt geen e-mailadres."; return; }
