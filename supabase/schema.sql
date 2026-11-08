@@ -217,3 +217,8 @@ grant execute on function is_parent_of(uuid) to authenticated, child;
 grant execute on function jwt_child_id() to authenticated, child;
 grant execute on function is_child(uuid) to authenticated, child;
 grant execute on function complete_task(uuid, text, text) to child;
+
+-- ---------- beheer (zie ook migratie kenik_admin) ----------
+-- Tabel admins: enkel wie hier in staat, krijgt admin_stats(). Rijen toevoegen kan alleen via het Supabase-dashboard:
+--   insert into admins(user_id) select id from auth.users where email = 'iemand@voorbeeld.be';
+-- admin_stats() geeft uitsluitend geaggregeerde cijfers terug (geen namen, geen e-mails).

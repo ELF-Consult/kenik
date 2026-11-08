@@ -107,6 +107,7 @@
   /* ---------- de interface die auth.js verwacht ---------- */
   window.OK_BACKEND = {
     mode: "supabase",
+    async isAdmin() { if (childAuth) return false; const { data } = await sb.rpc("is_admin"); return !!data; },
     /* alles van het eigen gezin wissen; RLS laat enkel het eigen gezin toe. Kinderen verwijderen neemt voortgang, codes, toestellen en aanvragen mee (cascade). */
     async wipeFamily() {
       if (childAuth || !familyId) return { error: "Enkel een ouder kan dit." };

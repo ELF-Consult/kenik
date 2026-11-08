@@ -10,7 +10,7 @@
   const GRADES = { get list() { return OK.GRADE_IDS.map(g => [g, OK.gradeName(g)]); }, map(fn) { return this.list.map(fn); }, slice(a, b) { return this.list.slice(a, b); } };
   const armed = (btn, fn) => btn.addEventListener("click", () => { if (btn.dataset.armed) { fn(); } else { btn.dataset.armed = "1"; btn.dataset.label = btn.textContent; btn.textContent = "Zeker? Klik nog eens."; btn.classList.add("armed"); setTimeout(() => { delete btn.dataset.armed; btn.textContent = btn.dataset.label; btn.classList.remove("armed"); }, 3500); } });
 
-  OK.openParent = function () { OK.applyTheme(null); OK.show("s-parent"); const first = document.querySelector("#ptabs .tab"); first.click(); };
+  OK.openParent = function () { OK.applyTheme(null); OK.show("s-parent"); const first = document.querySelector("#ptabs .tab"); first.click(); if (OK.backend.isAdmin) OK.backend.isAdmin().then(ok => $("btn-admin").classList.toggle("hidden", !ok)); };
   document.querySelectorAll("#ptabs .tab").forEach(t => t.addEventListener("click", () => {
     document.querySelectorAll("#ptabs .tab").forEach(x => x.classList.toggle("active", x === t));
     document.querySelectorAll(".ptab").forEach(p => p.classList.toggle("hidden", p.id !== "ptab-" + t.dataset.tab));

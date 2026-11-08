@@ -46,3 +46,13 @@ Dit is geschreven zonder toegang tot een echt project. Verwacht kleine bijsturin
 - Export en verwijdering van alle gezinsdata op verzoek (knop in Instellingen; verwijderen van het gezin wist via `on delete cascade` alles).
 - De Claude-functies (foto's lezen, leesteksten) via een eigen serverfunctie met een Anthropic API-sleutel en een limiet per gezin.
 - Installeerbare webapp (manifest + service worker) zodat ze op het beginscherm van een tablet kan.
+
+## 5. Beheerpagina
+
+`admin.html` toont geaggregeerde cijfers (gezinnen, kinderen, beurten per dag, vakken, ...). Toegang wordt in de database
+geregeld: alleen gebruikers in de tabel `admins` krijgen iets terug van `admin_stats()`; alle anderen zien "Geen toegang".
+Beheerder toevoegen (SQL-editor):
+```sql
+insert into admins(user_id) select id from auth.users where email = 'iemand@voorbeeld.be';
+```
+In het ouderpaneel verschijnt voor beheerders een knop "Beheer".
