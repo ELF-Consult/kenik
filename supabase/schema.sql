@@ -192,3 +192,28 @@ end $$;
 create or replace function purge_codes() returns void language sql security definer set search_path = public as $$
   delete from child_codes where expires_at < now();
 $$;
+
+-- ---------- rol voor kindtokens en rechten op functies ----------
+do $$ begin if not exists (select 1 from pg_roles where rolname = 'child') then create role child nologin; end if; end $$;
+grant child to authenticator;
+grant usage on schema public to child;
+grant select on all tables in schema public to child;
+grant insert on reward_requests to child;
+grant insert, update on child_progress to child;
+
+alter function jwt_child_id() set search_path = public;
+alter function is_child(uuid) set search_path = public;
+revoke execute on function create_family(text) from public, anon;
+revoke execute on function accept_invites() from public, anon;
+revoke execute on function complete_task(uuid, text, text) from public, anon, authenticated;
+revoke execute on function purge_codes() from public, anon;
+revoke execute on function is_parent_of(uuid) from public, anon;
+revoke execute on function jwt_child_id() from public, anon;
+revoke execute on function is_child(uuid) from public, anon;
+grant execute on function create_family(text) to authenticated;
+grant execute on function accept_invites() to authenticated;
+grant execute on function purge_codes() to authenticated;
+grant execute on function is_parent_of(uuid) to authenticated, child;
+grant execute on function jwt_child_id() to authenticated, child;
+grant execute on function is_child(uuid) to authenticated, child;
+grant execute on function complete_task(uuid, text, text) to child;
