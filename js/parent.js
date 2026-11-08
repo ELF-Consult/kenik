@@ -217,7 +217,7 @@
     if (samplePromise) return samplePromise;
     samplePromise = (async () => {
       try {
-        if (!window.claude || !window.claude.use) { sampleReason = "Deze pagina staat niet in claude.ai open. Open ze via de Claude-app of via claude.ai in je browser, niet als los tabblad op het eigen adres."; return null; }
+        if (!window.claude || !window.claude.use) { sampleReason = "Foto's inlezen is nog niet actief op deze site. Typ of plak de woordjes voorlopig hieronder; dit komt binnenkort."; return null; }
         const fn = await window.claude.use("sample");
         if (!fn) { sampleReason = "Claude is in deze weergave niet beschikbaar voor de pagina. Open ze via claude.ai (de artifact-link) en probeer opnieuw."; return null; }
         const lim = await fn.limits().catch(() => null);
