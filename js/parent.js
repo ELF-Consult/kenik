@@ -662,7 +662,8 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
       const exs = S().lists.filter(exOk); const ex = exs.find(l => (l.lang || OK.langFor(l.subject)) === OK.region().firstForeign) || exs[0];
       if (ex) { const b = el("button", "linklike", "Geen boek bij de hand? Probeer een voorbeeldlijst"); b.type = "button"; b.addEventListener("click", () => { wz.listId = ex.id; wzGo("when"); }); links.appendChild(b); }
       /* aan een laptop zonder camera: de foto met de gsm nemen via een QR-code */
-      if (OK.backend.createPhotoSession) { const ph = el("button", "linklike", "Zit je aan de laptop? Neem de foto met je gsm"); ph.type = "button"; ph.addEventListener("click", () => wzGo("phone")); links.appendChild(ph); }
+      const touch = window.matchMedia && window.matchMedia("(pointer: coarse)").matches; /* gsm of tablet: de camera zit al in "Foto maken" */
+      if (OK.backend.createPhotoSession && !touch) { const ph = el("button", "linklike", "Zit je aan de laptop? Neem de foto met je gsm"); ph.type = "button"; ph.addEventListener("click", () => wzGo("phone")); links.appendChild(ph); }
       const ty = el("button", "linklike", "Liever zelf typen of plakken"); ty.type = "button"; ty.addEventListener("click", () => wzGo("type")); links.appendChild(ty);
       body.appendChild(links);
       sampleAvailable().then(fn => { if (!fn && wz && wz.step === "photo") { drop.disabled = true; wzMsg(OK.ai.reason); } });

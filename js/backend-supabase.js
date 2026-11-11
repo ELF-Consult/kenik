@@ -15,7 +15,7 @@
   const FN = cfg.supabaseUrl.replace(/\/$/, "") + "/functions/v1/child-login";
   const KID_KEY = "kenik_child_refresh";
   let childAuth = null;      // { access_token, refresh_token, child_id, family_id, device_id, exp }
-  let familyId = null, lastPushed = {}, pushTimer = null, pulling = false;
+  let familyId = null, lastPushed = {}, pushTimer = null, pullPromise = null;
 
   /* client met kindtoken: zelfde database, andere identiteit */
   const childClient = () => window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { global: { headers: { Authorization: "Bearer " + childAuth.access_token } }, auth: { persistSession: false } });
@@ -23,8 +23,10 @@
   const DOC_KEYS = ["lists", "texts", "verbs", "rewards", "tasks", "settings"];
 
   /* ---------- ophalen ---------- */
-  async function pull() {
-    if (pulling) return; pulling = true;
+  /* loopt er al een pull (bv. door visibilitychange net na het inloggen), dan wacht de aanroeper daarop in plaats van meteen
+     verder te gaan met lege data: anders opent het ouderpaneel de wizard 'eerste kind' terwijl de kinderen nog onderweg zijn */
+  function pull() { if (!pullPromise) pullPromise = doPull().finally(() => { pullPromise = null; }); return pullPromise; }
+  async function doPull() {
     try {
       const S = OK.state(); const c = db();
       if (!familyId) { if (childAuth) familyId = childAuth.family_id; else { const { data: m } = await sb.from("family_members").select("family_id").limit(1); familyId = m && m[0] ? m[0].family_id : null; } }
@@ -45,7 +47,7 @@
       S.family = S.family || {}; S.family.id = familyId;
       lastPushed = snapshot(); OK.save(true);
       if (OK.onRemoteChange) OK.onRemoteChange();
-    } catch (e) { console.warn("pull", e); } finally { pulling = false; }
+    } catch (e) { console.warn("pull", e); }
   }
   const snapshot = () => { const S = OK.state(); const o = {}; DOC_KEYS.forEach(k => o[k] = JSON.stringify(k === "settings" ? S.settings : S[k] || [])); S.children.forEach(c => { o["child:" + c.id] = JSON.stringify([c.name, c.grade, c.theme, c.modules]); o["prog:" + c.id] = JSON.stringify([c.points, c.streak, c.best, c.garden, S.stats[c.id] || {}]); }); o.sessions = String((S.sessions || []).length); o.requests = JSON.stringify(S.requests || []); return o; };
 
