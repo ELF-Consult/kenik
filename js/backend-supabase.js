@@ -9,7 +9,9 @@
   "use strict";
   const cfg = window.KENIK_CONFIG; if (!cfg || !cfg.supabaseUrl || !window.supabase) return;
   const OK = window.OK = window.OK || {};
-  const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+  const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true,
+    /* geen navigator.locks: die vergrendeling kan blijven hangen (verzoeken vertrekken dan nooit meer, zonder foutmelding) */
+    lock: (_name, _timeout, fn) => fn() } });
   const FN = cfg.supabaseUrl.replace(/\/$/, "") + "/functions/v1/child-login";
   const KID_KEY = "kenik_child_refresh";
   let childAuth = null;      // { access_token, refresh_token, child_id, family_id, device_id, exp }
@@ -80,7 +82,11 @@
   document.addEventListener("DOMContentLoaded", () => {
     const base = OK.save; OK.save = function (fromPull) { base(); if (!fromPull) schedulePush(); };
     let authedOnce = false;
-    sb.auth.onAuthStateChange(async (ev, session) => { if (session && !childAuth) { await ensureFamily(); if (authedOnce && ev === "TOKEN_REFRESHED") return; authedOnce = true; await pull(); if (OK.onParentAuthed) OK.onParentAuthed(session.user.email); } });
+    /* niets afwachten binnen de callback zelf (Supabase-advies): het werk gaat via setTimeout buiten de sessievergrendeling */
+    sb.auth.onAuthStateChange((ev, session) => {
+      if (!session || childAuth) return;
+      setTimeout(async () => { await ensureFamily(); if (authedOnce && ev === "TOKEN_REFRESHED") return; authedOnce = true; await pull(); if (OK.onParentAuthed) OK.onParentAuthed(session.user.email); }, 0);
+    });
     document.addEventListener("visibilitychange", () => { if (!document.hidden) pull(); });
     setInterval(pull, 60000);
     try { const saved = JSON.parse(localStorage.getItem(KID_KEY) || "null"); if (saved) refreshChild(saved); } catch (e) { }
