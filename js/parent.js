@@ -650,7 +650,9 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
       drop.addEventListener("click", () => inp.click()); inp.addEventListener("change", () => wzRead([...inp.files]));
       body.append(drop, inp); body.appendChild(el("p", "small", "")).id = "wz-msg";
       const links = el("div", "stack wz-links");
-      const ex = S().lists.find(l => l.example && !l.pack && OK.forChild(l, c.id));
+      /* een voorbeeld dat bij het leerjaar past: een vreemde taal pas vanaf het vijfde, wereldoriëntatie vanaf het derde, voor de jongsten geen */
+      const exOk = l => l.example && !l.pack && OK.forChild(l, c.id) && (OK.langFor(l.subject) !== "nl" ? c.grade >= 5 : c.grade >= 3);
+      const exs = S().lists.filter(exOk); const ex = exs.find(l => (l.lang || OK.langFor(l.subject)) === OK.region().firstForeign) || exs[0];
       if (ex) { const b = el("button", "linklike", "Geen boek bij de hand? Probeer een voorbeeldlijst"); b.type = "button"; b.addEventListener("click", () => { wz.listId = ex.id; wzGo("when"); }); links.appendChild(b); }
       const ty = el("button", "linklike", "Liever zelf typen of plakken"); ty.type = "button"; ty.addEventListener("click", () => wzGo("type")); links.appendChild(ty);
       body.appendChild(links);
@@ -727,7 +729,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
         if (wz.taskId) S().tasks = S().tasks.filter(t => t.id !== wz.taskId);
         const module = l.pack ? "spelling" : "lijsten", m = OK.modules[module];
         const config = l.pack ? { types: ["dictee", "kies"], packs: [], own: [l.id] } : { lists: [l.id], dir: "q-a" };
-        if (!c.modules[module]) c.modules[module] = (m.defaultsFor && m.defaultsFor(c.grade, OK.region())) || (l.pack ? { types: ["dictee", "kies"], packs: [], own: "all" } : { lists: "all", dir: "q-a" });
+        if (!c.modules[module]) c.modules[module] = (!l.pack ? null : m.defaultsFor && m.defaultsFor(c.grade, OK.region())) || (l.pack ? { types: ["dictee", "kies"], packs: [], own: "all" } : { lists: [l.id], dir: "q-a" });
         const t = { id: OK.uid(), child: c.id, module, config, mode: $("wz-mode").value, count: +$("wz-count").value, due: due || null, bonus: Math.max(0, +$("wz-bonus").value || 0), status: "open", created: OK.nowISO() };
         S().tasks.push(t); wz.taskId = t.id; OK.save(); wzGo("done");
       });
