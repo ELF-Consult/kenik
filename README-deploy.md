@@ -64,3 +64,12 @@ maand (standaard 40), bijgehouden in `ai_usage`. Secrets bij de edge functions:
 - `ANTHROPIC_API_KEY`: sleutel van console.anthropic.com (verplicht; zonder sleutel meldt de app "nog niet ingesteld")
 - `AI_MODEL` (optioneel, standaard `claude-sonnet-5-5`), `AI_LIMIT` (optioneel, standaard 40)
 Kosten: ongeveer 1 tot 3 eurocent per handboekfoto, minder dan een cent per leestekst.
+
+## 9. Hosting: Cloudflare Pages (sinds 11 nov 2026)
+
+Verhuisd van Netlify (creditlimiet, site op pauze bij 0) naar Cloudflare Pages: geen publicatielimiet, onbeperkt verkeer,
+gratis voorvertoning per tak. Project `kenik` in het Cloudflare-account van ELF Consult, productie-adres
+https://kenik-52f.pages.dev, voorvertoningen op https://<tak>.kenik-52f.pages.dev. Build command leeg, output `/`.
+`_headers` vervangt `netlify.toml`. Supabase Redirect URLs: `https://kenik-52f.pages.dev/**` en `https://*.kenik-52f.pages.dev/**`.
+Domein kenik.be: Cloudflare Pages > Custom domains > kenik.be (eenvoudigst als de nameservers van kenik.be bij Cloudflare staan).
+De Netlify-site mag daarna verwijderd worden.
