@@ -222,3 +222,34 @@ grant execute on function complete_task(uuid, text, text) to child;
 -- Tabel admins: enkel wie hier in staat, krijgt admin_stats(). Rijen toevoegen kan alleen via het Supabase-dashboard:
 --   insert into admins(user_id) select id from auth.users where email = 'iemand@voorbeeld.be';
 -- admin_stats() geeft uitsluitend geaggregeerde cijfers terug (geen namen, geen e-mails).
+
+-- ---------------------------------------------------------------------------
+-- Foto met je gsm: de laptop maakt een sessie met token, de gsm stuurt de foto's naar de edge function "ai"
+-- met dat token, de laptop leest het resultaat. (Toegepast als migratie kenik_photo_sessions + kenik_photo_session_token_fix.)
+-- ---------------------------------------------------------------------------
+create table if not exists photo_sessions (
+  token text primary key,
+  family_id uuid not null references families(id) on delete cascade,
+  prompt text not null,
+  status text not null default 'open',          -- open | reading | done | error
+  result jsonb,
+  error text,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default now() + interval '15 minutes'
+);
+alter table photo_sessions enable row level security;
+create policy "ouders lezen eigen fotosessies" on photo_sessions for select
+  using (family_id in (select family_id from family_members where user_id = auth.uid()));
+
+create or replace function public.create_photo_session(p_prompt text)
+returns text language plpgsql security definer set search_path = public as $$
+declare fam uuid; tok text;
+begin
+  select family_id into fam from family_members where user_id = auth.uid() order by joined_at limit 1;
+  if fam is null then raise exception 'not allowed' using errcode = '42501'; end if;
+  delete from photo_sessions where expires_at < now();
+  -- geen gen_random_bytes: pgcrypto staat in schema extensions en valt buiten het search_path
+  tok := upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 10));
+  insert into photo_sessions(token, family_id, prompt) values (tok, fam, p_prompt);
+  return tok;
+end $$;
