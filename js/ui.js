@@ -61,13 +61,22 @@
   }
   OK.dueText = dueText;
   function startTask(t) { startSession({ moduleId: t.module, config: t.config, mode: t.mode, count: t.count, taskId: t.id }); }
+  /* opdrachten die de voorbije week afgewerkt zijn: daar hoort een proeftoets bij (zonder hulp, met score en extra coins) */
+  function recentDone(c) { const since = Date.now() - 7 * 864e5; return S().tasks.filter(t => t.status === "done" && t.doneAt && new Date(t.doneAt) > since && (t.doneBy === c.id || t.child === c.id) && OK.modules[t.module] && !t.tested).sort((a, b) => b.doneAt.localeCompare(a.doneAt)); }
+  function startProef(t) { t.tested = true; OK.save(); startSession({ moduleId: t.module, config: t.config, mode: "test", count: t.count, taskId: null }); }
+  function renderProef(c) {
+    const box = $("proef-card"); if (!box) return; box.innerHTML = ""; const done = recentDone(c).slice(0, 3); box.classList.toggle("hidden", !done.length); if (!done.length) return;
+    box.appendChild(h("h3", null, "Proeftoets"));
+    box.appendChild(h("p", "muted small", "Je kent het al. Durf je het zonder hulp? Bij 90% of meer krijg je 80 coins extra."));
+    done.forEach(t => { const d = h("div", "item"); d.appendChild(h("strong", null, OK.taskTitle(t))); const b = h("button", "btn", "Proeftoets"); b.type = "button"; b.addEventListener("click", () => startProef(t)); d.appendChild(b); box.appendChild(d); });
+  }
   let pmode = "now";
   document.querySelectorAll("#practice-modes input").forEach(i => i.addEventListener("change", () => { if (i.checked) pmode = i.value; }));
   function renderHome() {
     const c = OK.child(); if (!c) { renderWho(); return; }
     if (OK.syncVerbsFromLists) OK.syncVerbsFromLists(c);
     const tasks = openTasks(c);
-    renderHero(c, tasks[0]); renderTodo(c, tasks.slice(1));
+    renderHero(c, tasks[0]); renderTodo(c, tasks.slice(1)); renderProef(c);
     const goal = renderGoal($("goal-card"), c); $("btn-shop").classList.toggle("hidden", goal);
     const pb = $("practice-btns"); pb.innerHTML = "";
     const mods = enabledModules(c).sort((a, b) => (a.order || 50) - (b.order || 50));

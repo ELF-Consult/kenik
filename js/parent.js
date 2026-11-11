@@ -217,7 +217,7 @@
     box.appendChild(el("h3", null, "Nieuwe opdracht"));
     box.appendChild(el("p", "muted small", "Een opdracht verschijnt bovenaan op het startscherm van het kind. De instellingen liggen vast; afwerken levert de bonus op."));
     const kids = S().children;
-    const row1 = el("div", "row", `<label class="f">Voor wie<select id="t-child"><option value="all">Iedereen</option>${kids.map(k => `<option value="${k.id}" ${k.id === S().current ? "selected" : ""}>${esc(k.name)}</option>`).join("")}</select></label><label class="f">Welke oefening (klap open voor alle vakken)<select id="t-module"></select></label><label class="f" style="max-width:200px">Vorm<select id="t-mode"><option value="practice">Oefenen</option><option value="test">Toets</option></select></label>`);
+    const row1 = el("div", "row", `<label class="f">Voor wie<select id="t-child"><option value="all">Iedereen</option>${kids.map(k => `<option value="${k.id}" ${k.id === S().current ? "selected" : ""}>${esc(k.name)}</option>`).join("")}</select></label><label class="f">Welke oefening (klap open voor alle vakken)<select id="t-module"></select></label>`);
     box.appendChild(row1);
     const fields = el("div", "stack"); box.appendChild(fields);
     const row2 = el("div", "row", `<label class="f" id="t-count-wrap" style="max-width:160px">Aantal vragen<select id="t-count"><option>10</option><option selected>15</option><option>20</option><option>30</option></select></label><label class="f" style="max-width:180px">Tegen wanneer<input type="date" id="t-due"></label><label class="f" style="max-width:140px">Bonus (coins)<input type="number" id="t-bonus" min="0" value="50"></label>`);
@@ -240,7 +240,7 @@
     addBtn.addEventListener("click", () => {
       const m = OK.modules[modSel.value]; if (!m) return; const cfg = {}; let emptyList = false; (m.schema || []).forEach(f => { const v = OK.readField(f, fields); if (v !== undefined) cfg[f.key] = v; if ((f.type === "lists" || f.type === "packs") && Array.isArray(v) && !v.length) emptyList = true; });
       if (emptyList) { OK.toast("Kies eerst welke lijst(en) de opdracht omvat.", true); return; }
-      S().tasks.push({ id: OK.uid(), child: row1.querySelector("#t-child").value, module: m.id, config: cfg, mode: row1.querySelector("#t-mode").value, count: +row2.querySelector("#t-count").value, due: row2.querySelector("#t-due").value || null, bonus: +row2.querySelector("#t-bonus").value || 0, status: "open", created: OK.nowISO() });
+      S().tasks.push({ id: OK.uid(), child: row1.querySelector("#t-child").value, module: m.id, config: cfg, mode: "practice", count: +row2.querySelector("#t-count").value, due: row2.querySelector("#t-due").value || null, bonus: +row2.querySelector("#t-bonus").value || 0, status: "open", created: OK.nowISO() });
       OK.save(); msg.textContent = "Opdracht staat klaar."; renderTasks();
     });
     box.appendChild(el("h3", null, "Open opdrachten"));
@@ -789,9 +789,8 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
       row("Geen datum, gewoon oefenen", "", null);
       body.appendChild(opts);
       body.appendChild(el("p", "muted small", `${esc(c.name)} ziet dit bovenaan bij het openen van Kenik. Jij ziet wanneer het gekend is.`));
-      const det = el("details", "wz-more", `<summary class="linklike">Meer opties: aantal vragen, toets, bonus</summary>
+      const det = el("details", "wz-more", `<summary class="linklike">Meer opties: aantal vragen, bonus</summary>
         <div class="row" style="margin-top:12px"><label class="f" style="max-width:170px">Vragen per beurt<select id="wz-count"><option>10</option><option ${c.grade > 2 ? "selected" : ""}>15</option><option>20</option><option>30</option></select></label>
-        <label class="f">Vorm<select id="wz-mode"><option value="practice">Oefenen tot het gekend is</option><option value="test">Eén toets</option></select></label>
         <label class="f" style="max-width:150px">Bonus (coins)<input type="number" id="wz-bonus" min="0" value="50"></label></div>`); body.appendChild(det);
       body.appendChild(next);
       next.addEventListener("click", () => {
@@ -800,7 +799,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
         const module = l.pack ? "spelling" : "lijsten", m = OK.modules[module];
         const config = l.pack ? { types: ["dictee", "kies"], packs: [], own: [l.id] } : { lists: [l.id], dir: "q-a" };
         if (!c.modules[module]) c.modules[module] = (!l.pack ? null : m.defaultsFor && m.defaultsFor(c.grade, OK.region())) || (l.pack ? { types: ["dictee", "kies"], packs: [], own: "all" } : { lists: [l.id], dir: "q-a" });
-        const t = { id: OK.uid(), child: c.id, module, config, mode: $("wz-mode").value, count: +$("wz-count").value, due: due || null, bonus: Math.max(0, +$("wz-bonus").value || 0), status: "open", created: OK.nowISO() };
+        const t = { id: OK.uid(), child: c.id, module, config, mode: "practice", count: +$("wz-count").value, due: due || null, bonus: Math.max(0, +$("wz-bonus").value || 0), status: "open", created: OK.nowISO() };
         S().tasks.push(t); wz.taskId = t.id; OK.save(); wzGo("done");
       });
     },
