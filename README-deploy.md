@@ -3,16 +3,19 @@
 Twee delen: de site (statische bestanden) en de backend (Supabase: inloggen, database, kindcodes).
 Zonder backend werkt de site ook: alles blijft dan in de browser van het toestel.
 
-## 1. De site
+## 1. De site (Cloudflare Pages, sinds 11 nov 2026)
 
-1. Zet deze map op GitHub (repository "kenik").
-2. Netlify of Cloudflare Pages: "nieuw project uit Git", map = deze map, geen build-stap, publish directory = `/`.
-3. Koppel **kenik.be** in Netlify: Site configuration > Domain management > Add a domain > kenik.be. Netlify toont dan welke DNS-records je bij je registrar zet:
-   - `kenik.be` (apex): A-record naar het IP dat Netlify geeft (of ALIAS/ANAME als je registrar dat kan);
-   - `www.kenik.be`: CNAME naar `<jouw-site>.netlify.app`.
-   Alternatief: zet de nameservers van kenik.be op die van Netlify DNS, dan regelt Netlify alles zelf. HTTPS (Let's Encrypt) komt automatisch zodra de DNS klopt, reken op 10 minuten tot enkele uren.
-   Gebruik daarna overal `https://kenik.be` als Site URL (ook in Supabase, zie 2.4).
-4. Test: open de site, kies "Ik ben ouder". Zonder config.js logt dit lokaal in (nagebootste backend).
+1. Code staat op GitHub: `ELF-Consult/kenik`. Takken: `main` = productie (kenik.be), elke andere tak krijgt gratis een
+   voorvertoning op `https://<tak>.kenik-52f.pages.dev`. Werk op een tak, voeg pas samen naar `main` na "zet maar live".
+2. Cloudflare Pages, project `kenik` (account ELF Consult): build command leeg, output `/`. Elke push bouwt automatisch.
+   Productie-adres zonder domein: https://kenik-52f.pages.dev. `_headers` zorgt dat een nieuwe versie meteen zichtbaar is.
+3. Domein **kenik.be**: nameservers bij Combell staan op Cloudflare (`irma`/`trey.ns.cloudflare.com`); de DNS-zone zit dus
+   bij Cloudflare. Pages > Custom domains: `kenik.be` en `www.kenik.be` (CNAME naar kenik-52f.pages.dev, geproxied).
+   Redirect rule "www naar kenik.be" (301, query string behouden). De Combell-mailrecords (MX, SRV, SPF, DMARC,
+   autoconfig/autodiscover/mail) staan in de zone op "DNS only" en moeten zo blijven.
+4. Test: open https://kenik.be, kies "Ik ben ouder". Zonder config.js logt dit lokaal in (nagebootste backend).
+
+Netlify (de eerste hosting) is verwijderd op 11 nov 2026.
 
 ## 2. De backend (Supabase)
 
@@ -24,11 +27,14 @@ Nog handmatig in het dashboard (supabase.com/dashboard/project/ynkcucbfojnzqwgxi
 1. **Edge Functions > child-login > Secrets** (of Project Settings > Edge Functions): voeg `JWT_SECRET` toe met de
    waarde van **Project Settings > API > JWT Settings > JWT Secret**. Zonder dit antwoordt de functie "Server niet klaar".
 2. **Authentication > Sign In / Providers > Email**: aan, "Confirm email" mag uit, wachtwoord niet nodig (we gebruiken enkel magic links).
-3. **Authentication > URL Configuration**: Site URL = `https://kenik.be` (voorlopig het Netlify-adres), Redirect URLs = `https://kenik.be/**` en het Netlify-adres met `/**`.
+3. **Authentication > URL Configuration**: Site URL = `https://kenik.be`, Redirect URLs = `https://kenik.be/**`, `https://www.kenik.be/**`,
+   `https://kenik-52f.pages.dev/**` en `https://*.kenik-52f.pages.dev/**` (voorvertoningen per tak).
 4. Optioneel: **Authentication > Emails**: de magic-link-mail in het Nederlands zetten (onderwerp "Inloggen bij Kenik").
 
-Later nodig: een eigen SMTP (bv. Resend, gratis tot 3000 mails/maand) want de ingebouwde mailer van Supabase is beperkt tot
-een paar mails per uur en is enkel bedoeld om te testen. Authentication > SMTP Settings.
+Mail: de ingebouwde mailer van Supabase is beperkt tot 2 mails per uur en enkel bedoeld om te testen. Daarom Resend
+(gratis tot 3000 mails/maand): domein kenik.be bij Resend (DKIM TXT `resend._domainkey`, CNAME `rsend` en `send`, allemaal
+"DNS only" in Cloudflare), API key met "Sending access", en in Supabase > Authentication > SMTP Settings: host
+`smtp.resend.com`, poort `465`, gebruiker `resend`, wachtwoord = de API key, afzender `inloggen@kenik.be`, naam `Kenik`.
 
 ## 3. Controleren (in deze volgorde)
 
@@ -65,11 +71,10 @@ maand (standaard 40), bijgehouden in `ai_usage`. Secrets bij de edge functions:
 - `AI_MODEL` (optioneel, standaard `claude-sonnet-5-5`), `AI_LIMIT` (optioneel, standaard 40)
 Kosten: ongeveer 1 tot 3 eurocent per handboekfoto, minder dan een cent per leestekst.
 
-## 9. Hosting: Cloudflare Pages (sinds 11 nov 2026)
+## 7. Foto met je gsm
 
-Verhuisd van Netlify (creditlimiet, site op pauze bij 0) naar Cloudflare Pages: geen publicatielimiet, onbeperkt verkeer,
-gratis voorvertoning per tak. Project `kenik` in het Cloudflare-account van ELF Consult, productie-adres
-https://kenik-52f.pages.dev, voorvertoningen op https://<tak>.kenik-52f.pages.dev. Build command leeg, output `/`.
-`_headers` vervangt `netlify.toml`. Supabase Redirect URLs: `https://kenik-52f.pages.dev/**` en `https://*.kenik-52f.pages.dev/**`.
-Domein kenik.be: Cloudflare Pages > Custom domains > kenik.be (eenvoudigst als de nameservers van kenik.be bij Cloudflare staan).
-De Netlify-site mag daarna verwijderd worden.
+Wie aan de laptop zit, klikt in de wizard (stap "foto") op "Neem de foto met je gsm". De laptop maakt via
+`create_photo_session(prompt)` een token (tabel `photo_sessions`, 15 minuten geldig) en toont een QR-code naar
+`https://kenik.be/foto.html#TOKEN`. De gsm fotografeert (camera-opname, verkleind tot JPEG) en stuurt de foto's met het token
+naar de edge function `ai`; die zet het resultaat in `photo_sessions.result`. De laptop vraagt elke 2,5 s de status op en
+vult de wizard in zodra de status `done` is. Een token werkt voor één lijst.

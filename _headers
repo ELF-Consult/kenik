@@ -1,4 +1,4 @@
-# Kenik - Cloudflare Pages headers (zelfde idee als netlify.toml): nieuwe versie meteen zichtbaar na elke publicatie
+# Kenik - Cloudflare Pages headers: nieuwe versie meteen zichtbaar na elke publicatie
 /*
   Cache-Control: public, max-age=0, must-revalidate
   X-Content-Type-Options: nosniff
