@@ -652,22 +652,33 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     photo(body) {
       const c = wzChild();
       body.appendChild(wzHead(`Wat moet ${c.name} kennen?`, "Trek een foto van de bladzijde in het boek of schrift. Woordjes, begrippen of vervoegingen: Kenik leest ze zelf."));
-      const drop = el("button", "photo-drop", `<span class="photo-ico"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8 h3.5 l1.5 -2.5 h6 l1.5 2.5 h3.5 a1 1 0 0 1 1 1 v9.5 a1 1 0 0 1 -1 1 h-16 a1 1 0 0 1 -1 -1 v-9.5 a1 1 0 0 1 1 -1z"/><circle cx="12" cy="13.5" r="3.6"/></svg></span><strong>Foto maken of kiezen</strong><span class="muted small">Meerdere bladzijden mag</span>`); drop.type = "button";
+      const camIco = `<span class="photo-ico"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8 h3.5 l1.5 -2.5 h6 l1.5 2.5 h3.5 a1 1 0 0 1 1 1 v9.5 a1 1 0 0 1 -1 1 h-16 a1 1 0 0 1 -1 -1 v-9.5 a1 1 0 0 1 1 -1z"/><circle cx="12" cy="13.5" r="3.6"/></svg></span>`;
+      const fileIco = `<span class="photo-ico"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M4 17.5 l5 -4.5 l3.5 3 l3 -2.5 l5 4"/></svg></span>`;
+      /* gsm of tablet: aanraakscherm zonder muis, of een mobiele browser (iPad meldt zich als Mac, vandaar ook maxTouchPoints). Daar opent "Foto maken" meteen de camera. */
+      const touch = (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) || /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints || 0) > 1;
+      const phoneOk = !!OK.backend.createPhotoSession && !touch;
       const inp = el("input"); inp.type = "file"; inp.accept = "image/*"; inp.multiple = true; inp.className = "hidden";
-      drop.addEventListener("click", () => inp.click()); inp.addEventListener("change", () => wzRead([...inp.files]));
-      body.append(drop, inp); body.appendChild(el("p", "small", "")).id = "wz-msg";
+      inp.addEventListener("change", () => wzRead([...inp.files]));
+      const drop = el("button", "photo-drop", phoneOk
+        ? `${fileIco}<strong>Foto kiezen op deze computer</strong><span class="muted small">Een foto of scan die hier al staat</span>`
+        : `${camIco}<strong>Foto maken of kiezen</strong><span class="muted small">Meerdere bladzijden mag</span>`);
+      drop.type = "button"; drop.addEventListener("click", () => inp.click());
+      if (phoneOk) {
+        /* aan een laptop: eerst de gsm (QR-code), daarnaast een bestand van de computer */
+        const cam = el("button", "photo-drop", `${camIco}<strong>Foto maken met je gsm</strong><span class="muted small">Scan een code, de woordjes komen hier</span>`);
+        cam.type = "button"; cam.addEventListener("click", () => wzGo("phone"));
+        const two = el("div", "choice2"); two.append(cam, drop); body.appendChild(two);
+      } else body.appendChild(drop);
+      body.appendChild(inp); body.appendChild(el("p", "small", "")).id = "wz-msg";
       const links = el("div", "stack wz-links");
       /* een voorbeeld dat bij het leerjaar past: een vreemde taal pas vanaf het vijfde, wereldoriëntatie vanaf het derde, voor de jongsten geen */
       const exOk = l => l.example && !l.pack && OK.forChild(l, c.id) && (OK.langFor(l.subject) !== "nl" ? c.grade >= 5 : c.grade >= 3);
       const exs = S().lists.filter(exOk); const ex = exs.find(l => (l.lang || OK.langFor(l.subject)) === OK.region().firstForeign) || exs[0];
       if (ex) { const b = el("button", "linklike", "Geen boek bij de hand? Probeer een voorbeeldlijst"); b.type = "button"; b.addEventListener("click", () => { wz.listId = ex.id; wzGo("when"); }); links.appendChild(b); }
       /* aan een laptop zonder camera: de foto met de gsm nemen via een QR-code */
-      /* gsm of tablet: de camera zit al in "Foto maken". Aanraakscherm zonder muis, of een mobiele browser (iPad meldt zich als Mac, vandaar ook maxTouchPoints) */
-      const touch = (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) || /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints || 0) > 1;
-      if (OK.backend.createPhotoSession && !touch) { const ph = el("button", "linklike", "Zit je aan de laptop? Neem de foto met je gsm"); ph.type = "button"; ph.addEventListener("click", () => wzGo("phone")); links.appendChild(ph); }
       const ty = el("button", "linklike", "Liever zelf typen of plakken"); ty.type = "button"; ty.addEventListener("click", () => wzGo("type")); links.appendChild(ty);
       body.appendChild(links);
-      sampleAvailable().then(fn => { if (!fn && wz && wz.step === "photo") { drop.disabled = true; wzMsg(OK.ai.reason); } });
+      sampleAvailable().then(fn => { if (!fn && wz && wz.step === "photo") { body.querySelectorAll(".photo-drop").forEach(b => b.disabled = true); wzMsg(OK.ai.reason); } });
     },
     /* gsm: QR tonen, wachten tot de foto gelezen is, dan nakijken */
     async phone(body) {

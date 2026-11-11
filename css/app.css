@@ -340,7 +340,11 @@ details.unknown .linklike{font-size:14px;font-weight:600;text-decoration:none}
 .pick{min-height:52px;border-radius:12px;border:1px solid var(--edge);background:#fff;color:var(--fg);font-weight:600}
 .pick.sel{background:var(--blue);border-color:var(--blue);color:#fff}
 .photo-drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:260px;border-radius:20px;border:1.5px dashed var(--line2);background:#fff;color:var(--fg);width:100%}
-.photo-drop strong{font-size:20px}
+.photo-drop strong{font-size:20px;text-align:center}
+.choice2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.choice2 .photo-drop{min-height:220px;padding:16px}
+.photo-drop:hover{border-color:var(--link)}
+@media (max-width:640px){.choice2{grid-template-columns:1fr}}
 .photo-drop:disabled{opacity:.5;cursor:not-allowed}
 .photo-ico{width:80px;height:80px;border-radius:50%;background:var(--blue-bg);color:var(--link);display:grid;place-items:center}
 .wz-links{gap:0}
