@@ -577,7 +577,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
   /* kind (naam en leerjaar) -> foto -> nakijken -> tegen wanneer -> doorgeven. Alles krijgt een standaardwaarde;
      wat een ouder zelden aanpast (aantal vragen, toets, bonus) zit achter "Meer opties". */
   let wz = null;
-  const WZ_N = { kid: 1, who: 1, photo: 2, type: 2, phone: 2, reading: 2, review: 3, when: 4, done: 0 };
+  const WZ_N = { kid: 1, ready: 0, who: 1, photo: 2, type: 2, phone: 2, reading: 2, review: 3, when: 4, done: 0 };
   const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
   const localISO = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const wzHead = (title, sub) => el("div", "stack wz-head", `<h1>${esc(title)}</h1>${sub ? `<p class="muted">${esc(sub)}</p>` : ""}`);
@@ -646,7 +646,18 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
       body.appendChild(el("p", "muted small", "Kenik zet de oefeningen voor dat leerjaar al klaar. Je hoeft niets aan te vinken."));
       body.appendChild(next);
       $("wz-name").addEventListener("input", sync); setTimeout(() => { const i = $("wz-name"); if (i) i.focus(); }, 50);
-      next.addEventListener("click", () => { const c = OK.addChild($("wz-name").value.trim(), grade); wz.child = c.id; wz.hist = []; wzGo("photo", true); });
+      next.addEventListener("click", () => { const c = OK.addChild($("wz-name").value.trim(), grade); wz.child = c.id; wz.hist = []; wzGo("ready", true); });
+    },
+    /* het kind bestaat en kan al oefenen: een lijst uit het handboek is een plus, geen voorwaarde om te beginnen */
+    ready(body) {
+      const c = wzChild();
+      const mods = Object.keys(c.modules || {}).map(id => OK.modules[id]).filter(Boolean).sort((a, b) => (a.order || 99) - (b.order || 99));
+      const groups = mods.filter(m => m.generator !== false).map(m => m.name); /* "Lijsten" werkt pas met eigen inhoud */
+      body.appendChild(wzHead(`${esc(c.name)} kan beginnen`, `Voor ${esc(OK.gradeName(c.grade))} staat dit al klaar, zonder dat je iets moet ingeven:`));
+      const ul = el("ul", "ready-list"); groups.forEach(g => ul.appendChild(el("li", null, esc(g)))); body.appendChild(ul);
+      body.appendChild(el("p", "muted", `Woordjes, begrippen of vervoegingen uit het handboek van ${esc(c.name)} voeg je toe met een foto. Dat kan nu, of later vanuit het overzicht.`));
+      const go = el("button", "btn big wide", "Woordjes uit het handboek toevoegen"); go.type = "button"; go.addEventListener("click", () => wzGo("photo")); body.appendChild(go);
+      const later = el("button", "linklike", "Later, naar het overzicht"); later.type = "button"; later.addEventListener("click", () => { wz = null; OK.openParent(); }); body.appendChild(later);
     },
     /* foto eerst: geen naam, vak of instelling vooraf */
     photo(body) {

@@ -457,3 +457,7 @@ table.review .x{background:transparent;color:var(--fg2);font-size:18px;min-width
 
 /* versienummer rechts onderaan, onopvallend */
 .version{position:fixed;right:8px;bottom:6px;font-size:11px;color:#9aa3b2;opacity:.8;pointer-events:none;user-select:none}
+
+/* onboarding: wat er al klaarstaat voor het leerjaar */
+.ready-list{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:8px}
+.ready-list li{background:var(--blue-bg);color:var(--link);border-radius:999px;padding:8px 14px;font-weight:600}
