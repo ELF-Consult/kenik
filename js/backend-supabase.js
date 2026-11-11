@@ -109,6 +109,9 @@
     mode: "supabase",
     functionUrl: name => cfg.supabaseUrl.replace(/\/$/, "") + "/functions/v1/" + name,
     async accessToken() { if (childAuth) return null; const { data } = await sb.auth.getSession(); return data && data.session ? data.session.access_token : null; },
+    /* foto met de gsm: sessie aanmaken (QR) en het resultaat ophalen */
+    async createPhotoSession(prompt) { const { data, error } = await sb.rpc("create_photo_session", { p_prompt: prompt }); return error ? { error: error.message } : { token: data }; },
+    async photoSession(token) { const { data } = await sb.from("photo_sessions").select("status,result,error").eq("token", token).maybeSingle(); return data; },
     async isAdmin() { if (childAuth) return false; const { data } = await sb.rpc("is_admin"); return !!data; },
     async adminStats() { const { data, error } = await sb.rpc("admin_stats"); return error ? { error: error.message } : data; },
     /* alles van het eigen gezin wissen; RLS laat enkel het eigen gezin toe. Kinderen verwijderen neemt voortgang, codes, toestellen en aanvragen mee (cascade). */

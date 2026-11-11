@@ -577,7 +577,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
   /* kind (naam en leerjaar) -> foto -> nakijken -> tegen wanneer -> doorgeven. Alles krijgt een standaardwaarde;
      wat een ouder zelden aanpast (aantal vragen, toets, bonus) zit achter "Meer opties". */
   let wz = null;
-  const WZ_N = { kid: 1, who: 1, photo: 2, type: 2, reading: 2, review: 3, when: 4, done: 0 };
+  const WZ_N = { kid: 1, who: 1, photo: 2, type: 2, phone: 2, reading: 2, review: 3, when: 4, done: 0 };
   const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
   const localISO = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const wzHead = (title, sub) => el("div", "stack wz-head", `<h1>${esc(title)}</h1>${sub ? `<p class="muted">${esc(sub)}</p>` : ""}`);
@@ -595,7 +595,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     $("wz-back").textContent = wz.hist.length ? "Terug" : "Sluiten"; $("wz-back").classList.toggle("hidden", step === "done");
     const body = $("wz-body"); body.innerHTML = ""; WZ[step](body); window.scrollTo(0, 0);
   }
-  $("wz-back").addEventListener("click", () => { if (!wz) return; if (photoCtl) photoCtl.abort(); if (wz.hist.length) wzGo(wz.hist.pop(), true); else { wz = null; OK.openParent(); } });
+  $("wz-back").addEventListener("click", () => { if (!wz) return; if (photoCtl) photoCtl.abort(); stopPhone(); if (wz.hist.length) wzGo(wz.hist.pop(), true); else { wz = null; OK.openParent(); } });
   const wzChild = () => OK.childById(wz.child);
   const wzList = () => S().lists.find(l => l.id === wz.listId);
 
@@ -606,15 +606,22 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     try {
       const data = await fn.json(OK.photoPrompt(), { images: files, signal: photoCtl.signal });
       if (!wz || wz.step !== "reading") return;
-      const items = Array.isArray(data.items) ? data.items.filter(w => w && w.q && w.a).map(w => ({ q: String(w.q), a: String(w.a), check: !!w.check })) : [];
-      if (!items.length) { wzGo("photo", true); wzMsg("Niets herkend. Probeer een scherpere foto, recht van boven, met goed licht."); return; }
-      wz.verbs = Array.isArray(data.verbs) ? data.verbs.filter(v => v && v.inf) : [];
-      const pack = items.every(w => w.q.trim().toLowerCase() === w.a.trim().toLowerCase());
-      wz.items = items; wz.name = data.title ? String(data.title) : ""; wz.subject = pack ? "__pack" : (OK.SUBJECTS.includes(data.subject) ? data.subject : "Andere");
-      wzGo("review", true);
+      wzApply(data);
     } catch (e) { if (wz && wz.step === "reading") { wzGo("photo", true); wzMsg(OK.ai.errorText(e, "Lezen mislukt.")); } }
     finally { photoCtl = null; }
   }
+  /* resultaat van een gelezen foto (laptop of gsm) naar de nakijkstap */
+  function wzApply(data) {
+    data = data || {};
+    const items = Array.isArray(data.items) ? data.items.filter(w => w && w.q && w.a).map(w => ({ q: String(w.q), a: String(w.a), check: !!w.check })) : [];
+    if (!items.length) { wzGo("photo", true); wzMsg("Niets herkend. Probeer een scherpere foto, recht van boven, met goed licht."); return; }
+    wz.verbs = Array.isArray(data.verbs) ? data.verbs.filter(v => v && v.inf) : [];
+    const pack = items.every(w => w.q.trim().toLowerCase() === w.a.trim().toLowerCase());
+    wz.items = items; wz.name = data.title ? String(data.title) : ""; wz.subject = pack ? "__pack" : (OK.SUBJECTS.includes(data.subject) ? data.subject : "Andere");
+    wzGo("review", true);
+  }
+  let phoneTimer = null;
+  const stopPhone = () => { if (phoneTimer) clearInterval(phoneTimer); phoneTimer = null; };
 
   const WZ = {
     /* wie: bestaand kind kiezen of een nieuw toevoegen */
@@ -654,9 +661,32 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
       const exOk = l => l.example && !l.pack && OK.forChild(l, c.id) && (OK.langFor(l.subject) !== "nl" ? c.grade >= 5 : c.grade >= 3);
       const exs = S().lists.filter(exOk); const ex = exs.find(l => (l.lang || OK.langFor(l.subject)) === OK.region().firstForeign) || exs[0];
       if (ex) { const b = el("button", "linklike", "Geen boek bij de hand? Probeer een voorbeeldlijst"); b.type = "button"; b.addEventListener("click", () => { wz.listId = ex.id; wzGo("when"); }); links.appendChild(b); }
+      /* aan een laptop zonder camera: de foto met de gsm nemen via een QR-code */
+      if (OK.backend.createPhotoSession) { const ph = el("button", "linklike", "Zit je aan de laptop? Neem de foto met je gsm"); ph.type = "button"; ph.addEventListener("click", () => wzGo("phone")); links.appendChild(ph); }
       const ty = el("button", "linklike", "Liever zelf typen of plakken"); ty.type = "button"; ty.addEventListener("click", () => wzGo("type")); links.appendChild(ty);
       body.appendChild(links);
       sampleAvailable().then(fn => { if (!fn && wz && wz.step === "photo") { drop.disabled = true; wzMsg(OK.ai.reason); } });
+    },
+    /* gsm: QR tonen, wachten tot de foto gelezen is, dan nakijken */
+    async phone(body) {
+      body.appendChild(wzHead("Neem de foto met je gsm", "Scan deze code met de camera van je gsm. Daar neem je de foto; de woordjes verschijnen hier vanzelf."));
+      const box = el("div", "phone-box row"); const qr = el("div"); qr.id = "phone-qr"; const side = el("div", "stack");
+      side.innerHTML = `<p class="muted small">Of typ op je gsm:<br><strong id="phone-url"></strong></p><p class="small" id="wz-msg">Code maken...</p>`;
+      box.append(qr, side); body.appendChild(box);
+      const r = await OK.backend.createPhotoSession(OK.photoPrompt());
+      if (!wz || wz.step !== "phone") return;
+      if (!r || r.error) { wzMsg("Kon geen code maken: " + (r && r.error || "onbekend")); return; }
+      const url = location.origin + location.pathname.replace(/[^/]*$/, "") + "foto.html#" + r.token;
+      try { new window.QRCode(qr, { text: url, width: 170, height: 170, correctLevel: window.QRCode.CorrectLevel.M }); } catch (e) { qr.textContent = ""; }
+      $("phone-url").textContent = url.replace(/^https?:\/\//, ""); wzMsg("Wachten op de foto... De code is 15 minuten geldig.");
+      stopPhone();
+      phoneTimer = setInterval(async () => {
+        if (!wz || wz.step !== "phone") { stopPhone(); return; }
+        const ps = await OK.backend.photoSession(r.token); if (!ps) return;
+        if (ps.status === "reading") wzMsg("Foto ontvangen, Kenik leest ze...");
+        if (ps.status === "error") { stopPhone(); wzMsg("Mislukt: " + (ps.error || "onbekend") + " Ga terug en probeer opnieuw."); }
+        if (ps.status === "done") { stopPhone(); wzApply(ps.result); }
+      }, 2500);
     },
     reading(body) {
       body.appendChild(el("div", "stack wz-wait", `<div class="spinner" aria-hidden="true"></div><h2>Kenik leest de foto</h2><p class="muted">Dit duurt meestal 10 tot 40 seconden.</p>`));
