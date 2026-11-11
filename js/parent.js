@@ -82,7 +82,7 @@
       card.appendChild(row);
     });
     done.forEach(t => card.appendChild(el("div", "q-head taskrow", `<span>${esc(OK.taskTitle(t))}</span><span class="muted small">${OK.taskLists(t) ? "" : esc(t.score || "") + " · "}${OK.fmtDate(t.doneAt)} afgewerkt</span>`)));
-    const b = el("button", open.length || done.length ? "linklike" : "btn ghost", open.length || done.length ? `Nog iets klaarzetten voor ${esc(c.name)}` : "Een opdracht klaarzetten"); b.type = "button"; b.addEventListener("click", () => OK.openWizard(c.id));
+    const b = el("button", open.length || done.length ? "linklike" : "btn ghost", open.length || done.length ? `Nog iets klaarzetten voor ${esc(c.name)}` : "Een opdracht klaarzetten"); b.type = "button"; b.addEventListener("click", () => OK.openWizard(c.id, { task: true }));
     /* geen opdracht: het kind kan wel al vrij oefenen met alles van zijn leerjaar; een opdracht is er om te zien of het erin zit */
     if (!open.length && !done.length) card.appendChild(el("span", "muted small", `Nog geen opdracht. ${esc(c.name)} kan intussen vrij oefenen met alles voor ${esc(OK.gradeName(c.grade))}. Zet een opdracht klaar als je wil zien of iets gekend is.`));
     card.appendChild(b);
@@ -578,15 +578,15 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
   /* kind (naam en leerjaar) -> foto -> nakijken -> tegen wanneer -> doorgeven. Alles krijgt een standaardwaarde;
      wat een ouder zelden aanpast (aantal vragen, toets, bonus) zit achter "Meer opties". */
   let wz = null;
-  const WZ_N = { kid: 1, ready: 0, who: 1, photo: 2, type: 2, phone: 2, reading: 2, review: 3, when: 4, done: 0 };
+  const WZ_N = { kid: 1, ready: 0, what: 0, who: 1, photo: 2, type: 2, phone: 2, reading: 2, review: 3, when: 4, done: 0 };
   const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
   const localISO = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const wzHead = (title, sub) => el("div", "stack wz-head", `<h1>${esc(title)}</h1>${sub ? `<p class="muted">${esc(sub)}</p>` : ""}`);
   const wzMsg = t => { const m = $("wz-msg"); if (m) m.textContent = t; };
-  OK.openWizard = function (childId) {
-    const kids = S().children;
+  OK.openWizard = function (childId, opts) {
+    const kids = S().children; opts = opts || {};
     wz = { child: childId || (kids.length === 1 ? kids[0].id : null), step: null, hist: [], items: [], verbs: [], name: "", subject: "Frans", listId: null, taskId: null };
-    OK.show("s-wizard"); wzGo(!kids.length ? "kid" : wz.child ? "photo" : "who");
+    OK.show("s-wizard"); wzGo(!kids.length ? "kid" : wz.child ? (opts.task ? "what" : "photo") : "who");
   };
   function wzGo(step, noHist) {
     if (wz.step && !noHist && wz.step !== "reading") wz.hist.push(wz.step);
@@ -624,6 +624,8 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
   let phoneTimer = null;
   const stopPhone = () => { if (phoneTimer) clearInterval(phoneTimer); phoneTimer = null; };
 
+  const ICO_CAM = `<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8 h3.5 l1.5 -2.5 h6 l1.5 2.5 h3.5 a1 1 0 0 1 1 1 v9.5 a1 1 0 0 1 -1 1 h-16 a1 1 0 0 1 -1 -1 v-9.5 a1 1 0 0 1 1 -1z"/><circle cx="12" cy="13.5" r="3.6"/></svg>`;
+  const ICO_GEN = `<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8 h8 M8 12 h8 M8 16 h5"/></svg>`;
   const WZ = {
     /* wie: bestaand kind kiezen of een nieuw toevoegen */
     who(body) {
@@ -659,6 +661,15 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
       body.appendChild(el("p", "muted", `Woordjes, begrippen of vervoegingen uit het handboek van ${esc(c.name)} voeg je toe met een foto. Dat kan nu, of later vanuit het overzicht.`));
       const go = el("button", "btn big wide", "Woordjes uit het handboek toevoegen"); go.type = "button"; go.addEventListener("click", () => wzGo("photo")); body.appendChild(go);
       const later = el("button", "linklike", "Later, naar het overzicht"); later.type = "button"; later.addEventListener("click", () => { wz = null; OK.openParent(); }); body.appendChild(later);
+    },
+    /* opdracht klaarzetten: uit het handboek (foto) of een oefening die Kenik al heeft (tafels, klok, ...) */
+    what(body) {
+      const c = wzChild();
+      body.appendChild(wzHead(`Wat moet ${esc(c.name)} kennen?`));
+      const two = el("div", "choice2");
+      const a = el("button", "photo-drop", `<span class="photo-ico">${ICO_CAM}</span><strong>Uit het handboek</strong><span class="muted small">Woordjes, begrippen of vervoegingen van een foto</span>`); a.type = "button"; a.addEventListener("click", () => wzGo("photo"));
+      const b = el("button", "photo-drop", `<span class="photo-ico">${ICO_GEN}</span><strong>Een oefening van Kenik</strong><span class="muted small">Tafels, kloklezen, spelling, breuken, ...</span>`); b.type = "button"; b.addEventListener("click", () => { const cid = c.id; wz = null; OK.openParent("stof", "tasks"); const sel = $("t-child"); if (sel) { sel.value = cid; sel.dispatchEvent(new Event("change")); } });
+      two.append(a, b); body.appendChild(two);
     },
     /* foto eerst: geen naam, vak of instelling vooraf */
     photo(body) {
