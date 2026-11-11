@@ -78,3 +78,9 @@ Wie aan de laptop zit, klikt in de wizard (stap "foto") op "Neem de foto met je 
 `https://kenik.be/foto.html#TOKEN`. De gsm fotografeert (camera-opname, verkleind tot JPEG) en stuurt de foto's met het token
 naar de edge function `ai`; die zet het resultaat in `photo_sessions.result`. De laptop vraagt elke 2,5 s de status op en
 vult de wizard in zodra de status `done` is. Een token werkt voor één lijst.
+
+## 8. Versienummer
+
+Rechts onderaan staat het versienummer (bv. v2026.11.11-7); alle scripts en de stylesheet worden met `?v=<versie>` geladen,
+zodat een toestel na een publicatie nooit oude bestanden uit zijn cache gebruikt. Voor elke publicatie naar main: `./bump.sh`
+(zet het nummer van vandaag +1 in index.html en foto.html).
