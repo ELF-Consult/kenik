@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Kenik: foto</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Manrope:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="css/app.css">
+<style>
+  .wrap{max-width:520px;margin:0 auto;padding:16px}
+  .big-cam{width:100%;font-size:20px;padding:22px}
+  .shots{display:flex;gap:8px;flex-wrap:wrap}
+  .shots img{height:90px;border-radius:10px;border:1px solid var(--line)}
+  .done{font-size:48px;text-align:center}
+</style>
+</head>
+<body data-style="kist">
+<div class="app wrap stack">
+  <div class="brand" style="justify-content:center"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 4 h20 a4 4 0 0 1 4 4 v12 a4 4 0 0 1 -4 4 h-9 l-6 5 v-5 h-5 a4 4 0 0 1 -4 -4 v-12 a4 4 0 0 1 4 -4z" fill="#5b8cff"/><path d="M10 14.5 l4 4 l8 -8.5" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Kenik</span></div>
+
+  <section class="card stack" id="s-shoot">
+    <h2>Foto van het handboek</h2>
+    <p class="muted small">Leg de bladzijde plat, goed licht, recht van boven. Meerdere bladzijden mag: neem ze na elkaar.</p>
+    <button class="btn big-cam" id="btn-cam" type="button">📷 Foto nemen</button>
+    <input type="file" id="cam" accept="image/*" capture="environment" class="hidden">
+    <div class="shots" id="shots"></div>
+    <div class="row hidden" id="actions"><button class="btn mint big" id="btn-send" type="button">Verstuur naar de laptop</button><button class="btn ghost" id="btn-reset" type="button">Opnieuw</button></div>
+    <p class="small" id="msg"></p>
+  </section>
+
+  <section class="card stack hidden" id="s-done">
+    <div class="done">✅</div>
+    <h2 style="text-align:center">Klaar</h2>
+    <p class="muted" style="text-align:center">De woordjes staan op je laptop. Kijk ze daar na en sla de lijst op.</p>
+    <button class="btn" id="btn-more" type="button">Nog een lijst fotograferen</button>
+  </section>
+
+  <section class="card stack hidden" id="s-bad">
+    <h2>Dat lukte niet</h2>
+    <p id="bad-msg"></p>
+    <p class="muted small">Klik op de laptop opnieuw op "Foto met je gsm" en scan de nieuwe code.</p>
+  </section>
+</div>
+
+<script src="config.js"></script>
+<script>
+(function () {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const cfg = window.KENIK_CONFIG; const token = (location.hash || "").replace(/^#/, "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const show = id => ["s-shoot", "s-done", "s-bad"].forEach(x => $(x).classList.toggle("hidden", x !== id));
+  if (!cfg || !token) { $("bad-msg").textContent = "Geen geldige code in de link."; show("s-bad"); return; }
+  let files = [];
+  const paint = () => { const b = $("shots"); b.innerHTML = ""; files.forEach(f => { const i = document.createElement("img"); i.src = URL.createObjectURL(f); b.appendChild(i); }); $("actions").classList.toggle("hidden", !files.length); $("btn-cam").textContent = files.length ? "📷 Nog een bladzijde" : "📷 Foto nemen"; };
+  $("btn-cam").addEventListener("click", () => $("cam").click());
+  $("cam").addEventListener("change", () => { files = files.concat([...$("cam").files]).slice(0, 6); $("cam").value = ""; paint(); });
+  $("btn-reset").addEventListener("click", () => { files = []; paint(); $("msg").textContent = ""; });
+  $("btn-more").addEventListener("click", () => { $("bad-msg").textContent = "Een code werkt voor één lijst."; show("s-bad"); });
+
+  async function toJpeg(file, max) {
+    const bmp = await createImageBitmap(file); const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    const c = document.createElement("canvas"); c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale); c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+    const u = c.toDataURL("image/jpeg", 0.85); return { media_type: "image/jpeg", data: u.slice(u.indexOf(",") + 1) };
+  }
+  $("btn-send").addEventListener("click", async () => {
+    if (!files.length) return; const btn = $("btn-send"); btn.disabled = true; $("msg").textContent = "Versturen en lezen... dit duurt 10 tot 40 seconden.";
+    try {
+      const images = []; for (const f of files) images.push(await toJpeg(f, 1600));
+      const r = await fetch(cfg.supabaseUrl.replace(/\/$/, "") + "/functions/v1/ai", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token, images }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { $("bad-msg").textContent = d.error || ("Fout " + r.status); show("s-bad"); return; }
+      show("s-done");
+    } catch (e) { $("msg").textContent = "Versturen mislukte: " + (e.message || "geen verbinding"); btn.disabled = false; }
+  });
+})();
+</script>
+</body>
+</html>

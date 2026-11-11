@@ -70,3 +70,10 @@ Kosten: ongeveer 1 tot 3 eurocent per handboekfoto, minder dan een cent per lees
 Netlify (gratis plan) rekent 15 credits per publicatie naar `main`, 300 per maand; bij 0 gaat de site op pauze.
 Daarom: alle werk op de tak `dev` (gratis voorvertoning op https://dev--kenik.netlify.app), en pas na akkoord
 samenvoegen naar `main`, hooguit een keer per dag.
+
+## 8. Foto met je gsm
+
+Op de laptop maakt "Foto met je gsm" een sessie aan (`photo_sessions`, 15 minuten geldig) en toont een QR naar
+`foto.html#TOKEN`. De gsm stuurt de foto's zonder inloggen naar de edge function `ai` met dat token; de functie
+gebruikt het gezin en de opdracht uit de sessie, telt mee voor de maandlimiet, en zet het resultaat in de rij.
+De laptop haalt het elke 2,5 s op en vult de nakijktabel.

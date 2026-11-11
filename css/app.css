@@ -351,9 +351,14 @@ table.review th.hidden{display:none}
 /* twee keuzetegels: foto of zelf typen */
 .choice2{display:grid;grid-template-columns:1fr;gap:12px}
 @media(min-width:640px){.choice2{grid-template-columns:1fr 1fr}}
+@media(min-width:900px){.choice2{grid-template-columns:1fr 1fr 1fr}}
 .tile{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:16px 18px;border-radius:16px;background:var(--bg2);border:2px solid var(--line);color:var(--fg);cursor:pointer;font:inherit}
 .tile strong{font-family:var(--font-display);font-size:17px}
 .tile span:last-child{color:var(--fg2);font-size:13px;font-weight:600}
 .tile .tile-icon{font-size:26px;line-height:1}
 .tile.primary{background:color-mix(in srgb,var(--blue) 18%,var(--bg2));border-color:var(--blue)}
 .tile:disabled{opacity:.5;cursor:not-allowed}
+
+.phone-box{padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--bg2)}
+.phone-box #phone-qr{background:#fff;padding:8px;border-radius:10px;flex:0 0 auto}
+.phone-box #phone-qr img,.phone-box #phone-qr canvas{display:block}

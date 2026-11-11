@@ -241,10 +241,12 @@
       <p class="muted small hidden" id="wl-pack-hint">Een woordpakket is het rijtje woorden voor het dictee: alleen de woorden, geen vertaling. Kenik gebruikt het voor dictee, "kies de juiste schrijfwijze" en d/t.</p>
       <div class="choice2">
         <button class="tile primary" id="btn-take-photo" type="button"><span class="tile-icon">📷</span><strong>Foto van het handboek</strong><span>Neem een foto van de bladzijde met de woordjes of begrippen. Meerdere bladzijden mag. Je kijkt daarna alles na.</span></button>
+        <button class="tile" id="btn-phone" type="button"><span class="tile-icon">📱</span><strong>Foto met je gsm</strong><span>Zit je aan de laptop? Scan een code met je gsm, neem daar de foto, en de woordjes verschijnen hier.</span></button>
         <button class="tile" id="btn-manual" type="button"><span class="tile-icon">⌨️</span><strong>Zelf typen of plakken</strong><span>Uit een mail, Word of gewoon overtypen. Eén paar per regel.</span></button>
         <input type="file" id="photo-input" accept="image/*" multiple class="hidden">
       </div>
       <p class="muted small hidden" id="photo-status"></p>
+      <div class="stack hidden phone-box" id="phone-box"><div class="row" style="align-items:center"><div id="phone-qr"></div><div class="stack"><strong>Scan met de camera van je gsm</strong><p class="muted small">Of typ op je gsm: <span id="phone-url"></span></p><p class="small" id="phone-msg">Wachten op de foto...</p><button class="btn ghost" id="btn-phone-stop" type="button">Stop</button></div></div></div>
       <div class="row thumbs" id="photo-thumbs"></div>
       <div class="row hidden" id="photo-actions"><button class="btn mint" id="btn-read-photos" type="button">Lees de foto's</button><button class="btn ghost" id="btn-clear-photos" type="button">Foto's weg</button><button class="btn ghost hidden" id="btn-stop-photos" type="button">Stop</button></div>
       <p class="small" id="photo-msg"></p>
@@ -289,7 +291,26 @@
     form.getFiles = () => chosen; form.clearFiles = () => { chosen = []; showFiles(); };
     $("btn-stop-photos").addEventListener("click", () => { if (photoCtl) photoCtl.abort(); });
     $("btn-read-photos").addEventListener("click", readPhotos);
-    sampleAvailable().then(fn => { const st = $("photo-status"); if (!st) return; if (!fn) { st.classList.remove("hidden"); st.innerHTML = `<span class="tag bad">Foto's lezen niet beschikbaar</span> ${esc(OK.ai.reason)}`; $("btn-take-photo").disabled = true; $("btn-take-photo").classList.remove("primary"); $("btn-manual").classList.add("primary"); } });
+    sampleAvailable().then(fn => { const st = $("photo-status"); if (!st) return; if (!fn) { st.classList.remove("hidden"); st.innerHTML = `<span class="tag bad">Foto's lezen niet beschikbaar</span> ${esc(OK.ai.reason)}`; $("btn-take-photo").disabled = true; $("btn-take-photo").classList.remove("primary"); $("btn-phone").disabled = !OK.backend.createPhotoSession; $("btn-manual").classList.add("primary"); } });
+    let phoneTimer = null;
+    const stopPhone = () => { if (phoneTimer) clearInterval(phoneTimer); phoneTimer = null; $("phone-box").classList.add("hidden"); };
+    $("btn-phone-stop").addEventListener("click", stopPhone);
+    $("btn-phone").addEventListener("click", async () => {
+      if (!OK.backend.createPhotoSession) { $("photo-msg").textContent = "Foto met je gsm werkt enkel op kenik.be met een ouderaccount."; return; }
+      const wantPack = $("wl-pack").checked, subj = $("wl-subject").value === "__pack" ? "Nederlands" : $("wl-subject").value;
+      const r = await OK.backend.createPhotoSession(wantPack ? OK.packPrompt() : OK.photoPrompt(subj));
+      if (!r || r.error) { $("photo-msg").textContent = "Kon geen code maken: " + (r && r.error || "onbekend"); return; }
+      const url = location.origin + location.pathname.replace(/[^/]*$/, "") + "foto.html#" + r.token;
+      const holder = $("phone-qr"); holder.innerHTML = ""; try { new window.QRCode(holder, { text: url, width: 150, height: 150, correctLevel: window.QRCode.CorrectLevel.M }); } catch (e) { holder.textContent = url; }
+      $("phone-url").textContent = url.replace(/^https?:\/\//, ""); $("phone-msg").textContent = "Wachten op de foto... (code geldig 15 minuten)"; $("phone-box").classList.remove("hidden"); $("manual-block").classList.add("hidden");
+      if (phoneTimer) clearInterval(phoneTimer);
+      phoneTimer = setInterval(async () => {
+        const ps = await OK.backend.photoSession(r.token); if (!ps) return;
+        if (ps.status === "reading") $("phone-msg").textContent = "Foto ontvangen, wordt gelezen...";
+        if (ps.status === "error") { $("phone-msg").textContent = "Mislukt: " + (ps.error || "onbekend"); clearInterval(phoneTimer); phoneTimer = null; }
+        if (ps.status === "done") { stopPhone(); applyPhotoResult(ps.result, wantPack); }
+      }, 2500);
+    });
     $("btn-manual").addEventListener("click", () => { $("manual-block").classList.toggle("hidden"); if (!$("manual-block").classList.contains("hidden")) $("wl-text").focus(); });
 
     $("btn-parse-text").addEventListener("click", () => {
@@ -338,16 +359,24 @@
     try {
       const wantPack = $("wl-pack").checked;
       const data = await fn.json(wantPack ? OK.packPrompt() : OK.photoPrompt($("wl-subject").value === "__pack" ? "Nederlands" : $("wl-subject").value), { images: files, signal: photoCtl.signal });
+      const got = applyPhotoResult(data, wantPack);
+      if (got) $("photo-block").clearFiles();
+    } catch (e) { msg.textContent = OK.ai.errorText(e, "Lezen mislukt."); }
+    finally { btn.disabled = false; $("btn-stop-photos").classList.add("hidden"); photoCtl = null; }
+  }
+  /* resultaat van een foto (laptop of gsm) in de nakijktabel zetten; geeft terug of er iets gevonden is */
+  function applyPhotoResult(data, wantPack) {
+    const msg = $("photo-msg"); data = data || {};
+    {
       let items; if (wantPack) { const words = Array.isArray(data.words) ? data.words.map(w => String(w).trim()).filter(Boolean) : []; items = words.map(w => ({ q: w, a: w })); photoVerbs = []; }
       else { items = Array.isArray(data.items) ? data.items.filter(w => w && w.q && w.a).map(w => ({ q: String(w.q), a: String(w.a) })) : []; photoVerbs = Array.isArray(data.verbs) ? data.verbs.filter(v => v && v.inf) : []; }
       if (!wantPack && items.length && items.every(w => w.q.trim().toLowerCase() === w.a.trim().toLowerCase())) { $("wl-subject").value = "__pack"; $("wl-subject").dispatchEvent(new Event("change")); }
       if (items.length) { if (!$("wl-name").value.trim() && data.title) $("wl-name").value = String(data.title); if (!wantPack && OK.SUBJECTS.includes(data.subject) && $("wl-subject").value !== "__pack") $("wl-subject").value = data.subject; $("wl-subject").dispatchEvent(new Event("change")); }
       draftItems = (draftItems || []).concat(items); showReview();
-      if (items.length || photoVerbs.length) $("photo-block").clearFiles();
       msg.textContent = items.length || photoVerbs.length ? `${items.length} ${wantPack ? "woorden" : "paren"}${photoVerbs.length ? ` en ${photoVerbs.length} werkwoorden` : ""} gevonden${OK.ai.limit ? ` (${OK.ai.used} van ${OK.ai.limit} deze maand)` : ""}. Kijk na en klik op "Lijst opslaan".` : "Niets herkend. Probeer een scherpere foto, recht van boven, met goed licht.";
       $("review").scrollIntoView({ behavior: "smooth", block: "start" });
-    } catch (e) { msg.textContent = OK.ai.errorText(e, "Lezen mislukt."); }
-    finally { btn.disabled = false; $("btn-stop-photos").classList.add("hidden"); photoCtl = null; }
+      return !!(items.length || photoVerbs.length);
+    }
   }
 
   let textDraft = null;
