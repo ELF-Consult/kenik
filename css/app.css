@@ -444,3 +444,8 @@ table.review th:last-child,table.review td:last-child{width:44px;text-align:cent
 table.review .x{background:transparent;color:var(--fg2);font-size:18px;min-width:36px;min-height:44px}
 #result-goal{gap:8px}
 #result-goal .linklike{align-self:flex-start;min-height:44px;text-decoration:none}
+
+/* foto met de gsm (wizard) */
+.phone-box{padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--bg2);align-items:center}
+.phone-box #phone-qr{background:#fff;padding:8px;border-radius:10px;flex:0 0 auto;min-width:60px}
+.phone-box #phone-qr img,.phone-box #phone-qr canvas{display:block}
