@@ -20,7 +20,8 @@
   }
   function showMain(main, tab) {
     document.querySelectorAll("#ptabs .tab").forEach(x => x.classList.toggle("active", x.dataset.main === main));
-    const subs = MAIN[main] || [], ps = $("psub"); ps.innerHTML = ""; ps.classList.toggle("hidden", subs.length < 2);
+    /* de tab Werkwoorden verschijnt alleen als een kind Franse of Engelse werkwoorden oefent */
+    const subs = (MAIN[main] || []).filter(t => t !== "verbs" || anyChildHas("frans-werkwoorden", "engels-werkwoorden")), ps = $("psub"); ps.innerHTML = ""; ps.classList.toggle("hidden", subs.length < 2);
     subs.forEach(t => { const b = el("button", "tab", SUBLABEL[t]); b.type = "button"; b.dataset.tab = t; b.addEventListener("click", () => showTab(t)); ps.appendChild(b); });
     showTab(tab || subs[0]);
   }
@@ -445,8 +446,8 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
   const anyChildHas = (...ids) => S().children.some(c => ids.some(id => c.modules[id]));
   function renderVerbs() {
     const root = $("ptab-verbs"); root.innerHTML = ""; root.className = "stack ptab";
-    const showFr = anyChildHas("frans-werkwoorden"), showEn = anyChildHas("engels-werkwoorden"), showNl = anyChildHas("grammatica", "spelling");
-    if (!showFr && !showEn && !showNl) { root.appendChild(el("div", "card stack", `<p class="muted small">Geen enkel kind heeft nu een werkwoordenoefening aan (Franse of Engelse werkwoorden, Nederlandse grammatica of spelling). Zet die aan onder Kinderen, dan verschijnt de voorraad hier.</p>`)); return; }
+    const showFr = anyChildHas("frans-werkwoorden"), showEn = anyChildHas("engels-werkwoorden");
+    if (!showFr && !showEn) { root.appendChild(el("div", "card stack", `<p class="muted small">Geen enkel kind oefent nu Franse of Engelse werkwoorden. Zet die aan onder Meer, Kinderen.</p>`)); return; }
     /* Frans */
     if (showFr) {
     const fr = langCard(root, "#3b6fd6", "Frans", "De voorraad van jullie gezin. Begin klein en neem werkwoorden uit de lijst erbij als ze op school aan bod komen. Welke een kind oefent en in welke tijden, kies je per kind onder Kinderen.");
@@ -476,11 +477,6 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     $("btn-add-ev").addEventListener("click", () => { const inf = $("ev-inf").value.trim(), nl = $("ev-nl").value.trim(); let past = $("ev-past").value.trim(), pp = $("ev-pp").value.trim(); if (!inf) { $("ev-msg").textContent = "Infinitief invullen."; return; } if (!past) past = /e$/.test(inf) ? inf + "d" : /[^aeiou]y$/.test(inf) ? inf.slice(0, -1) + "ied" : inf + "ed"; if (!pp) pp = past; OK.addEnglishVerb(inf, past, pp, nl); renderVerbs(); $("ev-msg").textContent = `${inf} - ${past} - ${pp} toegevoegd.`; });
     }
     /* Nederlands */
-    if (showNl) {
-    const nl = langCard(root, "#e67e22", "Nederlands", "Ter info: deze ingebouwde werkwoorden gebruiken Grammatica (tijd herkennen, omzetten, infinitief) en Spelling (d/t, verleden tijd, voltooid deelwoord). Er valt hier niets te kiezen; alle vormen staan vast, zodat de oefeningen altijd kloppen.");
-    const dv = OK.dutchVerbs ? OK.dutchVerbs() : [];
-    nl.appendChild(el("div", "chips", dv.map(v => `<span class="tag">${esc(v[0])} <span class="muted">${esc(v[2])} · ${esc(v[4])}</span></span>`).join(" ")));
-    }
   }
 
   /* ---------- beloningen ---------- */
