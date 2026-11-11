@@ -103,7 +103,16 @@
     const n = opts.mode === "test" ? (isGen ? (opts.count || 15) : null) : (opts.count || 15);
     let pool = OK.buildPool(child, opts.moduleId, opts.config, isGen ? (n || 15) * 3 : 0);
     let qs;
+    const task = opts.taskId ? OK.state().tasks.find(x => x.id === opts.taskId) : null;
+    const taskLists = OK.taskLists(task);
     if (opts.mode === "test") qs = isGen ? pool.slice(0, n) : OK.shuffle(pool.slice());
+    else if (taskLists) {
+      /* opdracht op een lijst: eerst wat het kind nog niet kent, aangevuld met een paar gekende ter herhaling */
+      const st = OK.statsOf(child.id); const known = [], unknown = [];
+      pool.forEach(q => { const base = q.key.replace(/\|[fn]$/, ""); (OK.itemKnown(st[base + "|f"]) || OK.itemKnown(st[base + "|n"]) ? known : unknown).push(q); });
+      qs = OK.shuffle(unknown).slice(0, n);
+      const min = Math.min(n, 6, pool.length); if (qs.length < min) qs = qs.concat(OK.shuffle(known).slice(0, min - qs.length));
+    }
     else qs = OK.pickAdaptive(child, pool, Math.min(n, pool.length));
     const s = { child, module: m, mode: opts.mode, taskId: opts.taskId || null, qs, i: 0, tries: 0, results: [], points: 0, locked: false, t0: 0 };
     s.current = () => s.qs[s.i];
@@ -114,31 +123,32 @@
       const r = OK.judge(q, given); const set = OK.state().settings;
       if (r.ok) {
         s.locked = true;
-        const st = OK.stat(child.id, q.key); st.ok++; st.t = Math.round(st.t * 0.6 + (Date.now() - s.t0) * 0.4); st.last = Date.now();
+        const st = OK.stat(child.id, q.key); st.ok++; st.lastOk = s.tries === 0; st.t = Math.round(st.t * 0.6 + (Date.now() - s.t0) * 0.4); st.last = Date.now();
         let pts = s.mode === "test" ? 0 : (s.tries === 0 ? set.p1 : set.p2), streakBonus = 0, goalBonus = 0;
         if (s.mode !== "test") { child.streak++; child.best = Math.max(child.best, child.streak); if (child.streak % 5 === 0) { streakBonus = 10; pts += 10; } }
         const before = OK.todayCount(child.id);
         OK.logExercise(child.id, pts);
         if (s.mode !== "test" && before + 1 === set.goal && set.goalBonus) { OK.addPoints(child.id, set.goalBonus, "dagdoel"); goalBonus = set.goalBonus; }
         s.points += pts + goalBonus;
-        if (s.mode !== "test") { child.garden.flowers++; }
         s.results.push({ q, ok: true, tries: s.tries, given });
         OK.save();
         return { status: "ok", r, pts, streakBonus, goalBonus };
       }
-      s.tries++; OK.stat(child.id, q.key).wrong++; child.streak = 0; OK.save();
+      s.tries++; { const st = OK.stat(child.id, q.key); st.wrong++; st.lastOk = false; } child.streak = 0; OK.save();
       if (s.mode === "test" || s.tries >= 2) { s.locked = true; s.results.push({ q, ok: false, given }); return { status: "reveal", r }; }
       return { status: "retry", r };
     };
-    s.skip = function () { const q = s.current(); if (!q || s.locked) return; OK.stat(child.id, q.key).wrong++; child.streak = 0; s.locked = true; s.results.push({ q, ok: false, given: "" }); OK.save(); };
+    s.skip = function () { const q = s.current(); if (!q || s.locked) return; { const st = OK.stat(child.id, q.key); st.wrong++; st.lastOk = false; } child.streak = 0; s.locked = true; s.results.push({ q, ok: false, given: "" }); OK.save(); };
     s.next = () => { s.i++; return s.i < s.qs.length; };
     s.finish = function () {
       const n = s.results.length, ok = s.results.filter(r => r.ok).length, pct = n ? Math.round(ok / n * 100) : 0;
-      let bonus = 0, taskDone = false;
+      let bonus = 0, taskDone = false, progress = null;
       if (s.mode === "test" && n >= 5) { bonus = pct >= 90 ? 80 : pct >= 75 ? 40 : pct >= 50 ? 15 : 0; if (bonus) OK.addPoints(child.id, bonus, "toets"); }
       if (s.taskId && n >= s.qs.length) {
         const t = OK.state().tasks.find(x => x.id === s.taskId);
-        if (t && t.status === "open") { t.status = "done"; t.doneAt = OK.nowISO(); t.doneBy = child.id; t.score = ok + "/" + n; if (t.bonus) { OK.addPoints(child.id, t.bonus, "opdracht"); bonus += t.bonus; } taskDone = true; }
+        progress = t ? OK.taskProgress(t, child.id) : null;
+        /* een opdracht op een lijst is pas af als alle woorden gekend zijn; al de rest na één volledige beurt */
+        if (t && t.status === "open" && (!progress || progress.known >= progress.total)) { t.status = "done"; t.doneAt = OK.nowISO(); t.doneBy = child.id; t.score = ok + "/" + n; if (t.bonus) { OK.addPoints(child.id, t.bonus, "opdracht"); bonus += t.bonus; } taskDone = true; }
       }
       /* bewaar de beurt voor het ouderpaneel */
       if (n) {
@@ -148,7 +158,7 @@
         if (st.sessions.length > 400) st.sessions.length = 400;
       }
       OK.save();
-      return { n, ok, pct, bonus, total: s.points + bonus, taskDone, wrong: s.results.filter(r => !r.ok || r.tries > 0) };
+      return { n, ok, pct, bonus, total: s.points + bonus, taskDone, progress, wrong: s.results.filter(r => !r.ok || r.tries > 0) };
     };
     return s;
   };

@@ -10,8 +10,22 @@
   const GRADES = { get list() { return OK.GRADE_IDS.map(g => [g, OK.gradeName(g)]); }, map(fn) { return this.list.map(fn); }, slice(a, b) { return this.list.slice(a, b); } };
   const armed = (btn, fn) => btn.addEventListener("click", () => { if (btn.dataset.armed) { fn(); } else { btn.dataset.armed = "1"; btn.dataset.label = btn.textContent; btn.textContent = "Zeker? Klik nog eens."; btn.classList.add("armed"); setTimeout(() => { delete btn.dataset.armed; btn.textContent = btn.dataset.label; btn.classList.remove("armed"); }, 3500); } });
 
-  OK.openParent = function () { OK.applyTheme(null); OK.show("s-parent"); const first = document.querySelector("#ptabs .tab"); first.click(); };
-  /* Beheer: knop in de kop, enkel voor beheerders; opent het ouderpaneel op het (verborgen) tabblad Beheer */
+  /* Drie ingangen: Overzicht (kennen ze het?), Leerstof (wat ze moeten kennen) en Meer (al de rest). */
+  const MAIN = { home: ["home"], stof: ["lists", "tasks", "verbs"], meer: ["kids", "rewards", "results", "family", "settings"] };
+  const SUBLABEL = { lists: "Lijsten", tasks: "Opdrachten", verbs: "Werkwoorden", kids: "Kinderen", rewards: "Winkel", results: "Resultaten", family: "Gezin en toestellen", settings: "Instellingen" };
+  function showTab(tab) {
+    document.querySelectorAll(".ptab").forEach(x => x.classList.toggle("hidden", x.id !== "ptab-" + tab));
+    document.querySelectorAll("#psub .tab").forEach(x => x.classList.toggle("active", x.dataset.tab === tab));
+    TABS[tab]();
+  }
+  function showMain(main, tab) {
+    document.querySelectorAll("#ptabs .tab").forEach(x => x.classList.toggle("active", x.dataset.main === main));
+    const subs = MAIN[main] || [], ps = $("psub"); ps.innerHTML = ""; ps.classList.toggle("hidden", subs.length < 2);
+    subs.forEach(t => { const b = el("button", "tab", SUBLABEL[t]); b.type = "button"; b.dataset.tab = t; b.addEventListener("click", () => showTab(t)); ps.appendChild(b); });
+    showTab(tab || subs[0]);
+  }
+  OK.openParent = function (main, tab) { OK.show("s-parent"); showMain(main || "home", tab); };
+  /* Beheer: knop in de kop, enkel voor beheerders */
   let adminKnown = null;
   OK.refreshAdminButton = async function () {
     const ses = OK.session(); const b = $("btn-admin");
@@ -19,13 +33,60 @@
     if (adminKnown === null) adminKnown = await OK.backend.isAdmin();
     b.classList.toggle("hidden", !adminKnown);
   };
-  $("btn-admin").addEventListener("click", () => { OK.applyTheme(null); OK.show("s-parent"); $("tab-admin").click(); });
-  document.querySelectorAll("#ptabs .tab").forEach(t => t.addEventListener("click", () => {
-    document.querySelectorAll("#ptabs .tab").forEach(x => x.classList.toggle("active", x === t));
-    document.querySelectorAll(".ptab").forEach(p => p.classList.toggle("hidden", p.id !== "ptab-" + t.dataset.tab));
-    TABS[t.dataset.tab]();
-  }));
-  const TABS = { kids: renderKids, tasks: renderTasks, lists: renderLists, verbs: renderVerbs, rewards: renderRewards, results: renderResults, family: renderFamily, settings: renderSettings, admin: () => OK.renderAdmin && OK.renderAdmin($("ptab-admin")) };
+  $("btn-admin").addEventListener("click", () => { OK.show("s-parent"); document.querySelectorAll("#ptabs .tab").forEach(x => x.classList.remove("active")); $("psub").classList.add("hidden"); showTab("admin"); });
+  document.querySelectorAll("#ptabs .tab").forEach(t => t.addEventListener("click", () => showMain(t.dataset.main)));
+  const TABS = { home: renderOverview, kids: renderKids, tasks: renderTasks, lists: renderLists, verbs: renderVerbs, rewards: renderRewards, results: renderResults, family: renderFamily, settings: renderSettings, admin: () => OK.renderAdmin && OK.renderAdmin($("ptab-admin")) };
+
+  /* ---------- overzicht: kennen ze het? ---------- */
+  const tasksOf = (c, status) => S().tasks.filter(t => t.status === status && (t.child === c.id || t.child === "all" || t.doneBy === c.id) && OK.modules[t.module]);
+  function renderOverview() {
+    const root = $("ptab-home"); root.innerHTML = ""; const kids = S().children;
+    if (!kids.length) {
+      const w = el("div", "card stack", `<h2>Welkom bij Kenik</h2><p class="muted">Zet klaar wat je kind moet kennen. Kenik vraagt het af en jij ziet of het erin zit.</p>`);
+      const b = el("button", "btn big", "Begin"); b.type = "button"; b.addEventListener("click", () => OK.openWizard()); w.appendChild(b); root.appendChild(w); return;
+    }
+    root.appendChild(el("div", "q-head", `<h2>Kennen ze het?</h2><span class="muted small">${new Date().toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" })}</span>`));
+    const reqs = S().requests.filter(q => q.status === "open");
+    if (reqs.length) {
+      const box = el("div", "card stack"); box.appendChild(el("h3", null, "Aangevraagd in de winkel"));
+      reqs.forEach(q => {
+        const d = el("div", "item", `<span><strong>${esc(OK.childName(q.child))}</strong> wil: ${esc(q.reward)} <span class="muted small">(${q.cost} coins)</span></span>`); const r = el("div", "row");
+        const ok = el("button", "btn mint", "Gegeven"); ok.type = "button"; ok.addEventListener("click", () => { q.status = "ok"; OK.save(); renderOverview(); });
+        const no = el("button", "btn ghost", "Weigeren"); no.type = "button"; no.title = "De coins gaan terug"; no.addEventListener("click", () => { q.status = "no"; OK.addPoints(q.child, q.cost, "terug: " + q.reward); renderOverview(); });
+        r.append(ok, no); d.appendChild(r); box.appendChild(d);
+      });
+      root.appendChild(box);
+    }
+    kids.forEach(c => root.appendChild(kidStatus(c)));
+    const add = el("button", "btn big", `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8 h3.5 l1.5 -2.5 h6 l1.5 2.5 h3.5 a1 1 0 0 1 1 1 v9.5 a1 1 0 0 1 -1 1 h-16 a1 1 0 0 1 -1 -1 v-9.5 a1 1 0 0 1 1 -1z"/><circle cx="12" cy="13.5" r="3.6"/></svg> Nieuwe leerstof`); add.type = "button"; add.classList.add("wide");
+    add.addEventListener("click", () => OK.openWizard()); root.appendChild(add);
+  }
+  function kidStatus(c) {
+    const card = el("div", "card stack kidstatus");
+    const open = tasksOf(c, "open").sort((a, b) => (a.due || "9").localeCompare(b.due || "9"));
+    const since = Date.now() - 7 * 864e5;
+    const done = tasksOf(c, "done").filter(t => t.doneAt && new Date(t.doneAt) > since && (!t.doneBy || t.doneBy === c.id)).sort((a, b) => b.doneAt.localeCompare(a.doneAt)).slice(0, 2);
+    let chip = "";
+    if (open.length) { const p = OK.taskProgress(open[0], c.id); chip = p ? (p.known >= p.total ? `<span class="tag good">Kent het</span>` : `<span class="tag warn">Nog ${p.total - p.known} te gaan</span>`) : `<span class="tag warn">Nog te doen</span>`; }
+    else if (done.length) chip = `<span class="tag good">${OK.taskLists(done[0]) ? "Kent het" : "Afgewerkt"}</span>`;
+    card.appendChild(el("div", "kidhead", `${OK.avatarHTML(c, 40)}<span class="kidname"><strong>${esc(c.name)}</strong><span class="muted small">${esc(OK.gradeName(c.grade))}</span></span>${chip}`));
+    open.forEach(t => {
+      const p = OK.taskProgress(t, c.id); const row = el("div", "stack taskrow");
+      row.appendChild(el("div", "q-head", `<strong>${esc(OK.taskTitle(t))}</strong><span class="muted small">${esc((OK.dueText(t) || "geen datum").toLowerCase())}</span>`));
+      if (p) {
+        row.appendChild(el("div", "bar thin", `<i style="width:${p.total ? p.known / p.total * 100 : 0}%"></i>`));
+        const det = el("details", "unknown", `<summary><span>${p.known} van ${p.total} gekend</span>${p.unknown.length ? `<span class="linklike">Welke nog niet?</span>` : ""}</summary>`);
+        if (p.unknown.length) det.appendChild(el("div", "list", p.unknown.map(([q, a]) => `<div class="item slim"><span>${esc(q)}</span>${q === a ? "" : `<strong>${esc(a)}</strong>`}</div>`).join("")));
+        row.appendChild(det);
+      } else row.appendChild(el("span", "muted small", (t.mode === "test" ? "toets" : t.count + " vragen") + ", nog niet afgewerkt"));
+      card.appendChild(row);
+    });
+    done.forEach(t => card.appendChild(el("div", "q-head taskrow", `<span>${esc(OK.taskTitle(t))}</span><span class="muted small">${OK.taskLists(t) ? "" : esc(t.score || "") + " · "}${OK.fmtDate(t.doneAt)} afgewerkt</span>`)));
+    const b = el("button", open.length || done.length ? "linklike" : "btn ghost", open.length || done.length ? `Nog iets klaarzetten voor ${esc(c.name)}` : "Iets klaarzetten"); b.type = "button"; b.addEventListener("click", () => OK.openWizard(c.id));
+    if (!open.length && !done.length) card.appendChild(el("span", "muted small", "Nog niets klaargezet."));
+    card.appendChild(b);
+    return card;
+  }
 
   /* ---------- kinderen ---------- */
   let editing = null, deviceFor = null;
@@ -78,11 +139,10 @@
     const list = el("div", "kidcards");
     const COLORS = ["#5b8cff", "#3ddc97", "#ff8a1f", "#c06bff", "#ff5d7a", "#2fc4d8"];
     S().children.forEach((c, i) => {
-      const v = OK.gardenVariants[c.theme.variant];
       const groups = {}; Object.keys(c.modules).filter(k => c.modules[k] && OK.modules[k]).forEach(k => { const g = OK.modules[k].group; groups[g] = (groups[g] || 0) + 1; });
       const d = el("div", "kidcard");
       d.innerHTML = `${OK.avatarHTML(c)}
-        <div class="kidinfo"><strong>${esc(c.name)}</strong><span class="muted small">${OK.gradeName(c.grade)} · ${c.theme.style === "kist" ? "schatkist" : (v ? v.name.toLowerCase() : "wereld")}</span>
+        <div class="kidinfo"><strong>${esc(c.name)}</strong><span class="muted small">${OK.gradeName(c.grade)} · ${c.points} coins</span>
         <div class="row">${Object.entries(groups).map(([g, n]) => `<span class="tag">${esc(g)} <b>${n}</b></span>`).join("") || '<span class="tag bad">nog niets aan</span>'}</div></div>`;
       const btns = el("div", "row");
       const q = el("button", "btn ghost", "Ander toestel"); q.type = "button"; q.title = "Code en QR om dit kind op een ander toestel aan te melden"; q.addEventListener("click", () => { deviceFor = deviceFor === c.id ? null : c.id; renderKids(); });
@@ -93,14 +153,15 @@
     if (!S().children.length) list.appendChild(el("p", "muted small", "Nog geen kinderen."));
     box.appendChild(list);
     // nieuw kind
-    const add = el("div", "row", `<label class="f">Voornaam<input type="text" id="k-name"></label><label class="f" style="max-width:180px">Leerjaar<select id="k-grade">${GRADES.map(g => `<option value="${g[0]}" ${g[0] === 4 ? "selected" : ""}>${g[1]}</option>`).join("")}</select></label><label class="f" style="max-width:260px">Stijl<select id="k-style"><option value="tuin">Wereld: verzamelen</option><option value="kist">Schatkist: coins en winkel</option></select></label>`);
+    const add = el("div", "row", `<label class="f">Voornaam<input type="text" id="k-name"></label><label class="f" style="max-width:180px">Leerjaar<select id="k-grade">${GRADES.map(g => `<option value="${g[0]}" ${g[0] === 4 ? "selected" : ""}>${g[1]}</option>`).join("")}</select></label>`);
     const addBtn = el("button", "btn", "Kind toevoegen"); addBtn.type = "button"; add.appendChild(addBtn); box.appendChild(el("h3", null, "Nieuw kind")); box.appendChild(add);
-    addBtn.addEventListener("click", () => { const n = $("k-name").value.trim(); if (!n) return; const g = +$("k-grade").value, st = $("k-style").value; const c = OK.addChild(n, g, { style: st, variant: "hondjes" }); editing = c.id; renderKids(); });
+    box.appendChild(el("p", "muted small", "De oefeningen voor dat leerjaar staan meteen klaar. Bijsturen kan via Instellen."));
+    addBtn.addEventListener("click", () => { const n = $("k-name").value.trim(); if (!n) return; OK.addChild(n, +$("k-grade").value); renderKids(); });
   }
   function childEditor(c) {
     const wrap = el("div", "stack");
     const head = el("div", "q-head"); head.appendChild(el("h3", null, `Instellingen voor ${esc(c.name)}`)); const back = el("button", "btn ghost", "Terug naar overzicht"); back.type = "button"; back.addEventListener("click", () => { editing = null; renderKids(); }); head.appendChild(back); wrap.appendChild(head);
-    const basics = el("div", "row", `<label class="f">Voornaam<input type="text" id="e-name" value="${esc(c.name)}"></label><label class="f" style="max-width:180px">Leerjaar<select id="e-grade">${GRADES.map(g => `<option value="${g[0]}" ${g[0] === c.grade ? "selected" : ""}>${g[1]}</option>`).join("")}</select></label><label class="f" style="max-width:260px">Stijl<select id="e-style"><option value="tuin" ${c.theme.style === "tuin" ? "selected" : ""}>Wereld: verzamelen</option><option value="kist" ${c.theme.style === "kist" ? "selected" : ""}>Schatkist: coins en winkel</option></select></label>`);
+    const basics = el("div", "row", `<label class="f">Voornaam<input type="text" id="e-name" value="${esc(c.name)}"></label><label class="f" style="max-width:180px">Leerjaar<select id="e-grade">${GRADES.map(g => `<option value="${g[0]}" ${g[0] === c.grade ? "selected" : ""}>${g[1]}</option>`).join("")}</select></label>`);
     wrap.appendChild(basics);
     // icoontje: zo zie je in één oogopslag op wiens account je zit
     let avatar = c.avatar || "";
@@ -108,12 +169,6 @@
     const av = el("div", "avpick");
     const paint = () => { av.innerHTML = ""; const none = el("button", "avopt" + (!avatar ? " sel" : ""), `<div class="avatar" style="background:#5b8cff;width:36px;height:36px;font-size:16px">${esc(c.name[0] || "?").toUpperCase()}</div>`); none.type = "button"; none.title = "Beginletter"; none.addEventListener("click", () => { avatar = ""; paint(); }); av.appendChild(none); OK.AVATARS.forEach(e => { const b = el("button", "avopt" + (avatar === e ? " sel" : ""), e); b.type = "button"; b.addEventListener("click", () => { avatar = e; paint(); }); av.appendChild(b); }); };
     paint(); aw.appendChild(av); wrap.appendChild(aw);
-    // varianten
-    const vwrap = el("div", "stack" + (c.theme.style === "tuin" ? "" : " hidden")); vwrap.appendChild(el("p", "muted small", "Welke wereld?"));
-    basics.querySelector("#e-style").addEventListener("change", e => vwrap.classList.toggle("hidden", e.target.value !== "tuin"));
-    const vs = el("div", "variants"); let chosen = c.theme.variant || "hondjes";
-    Object.entries(OK.gardenVariants).forEach(([k, v]) => { const b = el("button", "variant" + (k === chosen ? " sel" : ""), `${v.collect(0)}<span>${v.name}</span>`); b.type = "button"; b.dataset.v = k; b.addEventListener("click", () => { chosen = k; vs.querySelectorAll(".variant").forEach(x => x.classList.toggle("sel", x.dataset.v === k)); }); vs.appendChild(b); });
-    vwrap.appendChild(vs); wrap.appendChild(vwrap);
     // modules
     wrap.appendChild(el("p", "muted small", "Wat oefent dit kind? Vink aan en stel in. De voorstellen volgen het leerjaar; pas gerust aan."));
     const groups = {}; Object.values(OK.modules).forEach(m => { (groups[m.group] = groups[m.group] || []).push(m); });
@@ -144,7 +199,7 @@
     row.append(save, cancel, reset, del); wrap.appendChild(row);
     const msg = el("p", "muted small", ""); wrap.appendChild(msg);
     save.addEventListener("click", () => {
-      c.name = $("e-name").value.trim() || c.name; c.grade = +$("e-grade").value; c.theme = { style: $("e-style").value, variant: chosen }; c.avatar = avatar || undefined;
+      c.name = $("e-name").value.trim() || c.name; c.grade = +$("e-grade").value; c.avatar = avatar || undefined;
       const mods = {};
       modRoot.querySelectorAll(".modcfg").forEach(box => { const m = OK.modules[box.dataset.mod]; if (!box.querySelector("[data-on]").checked) return; const cfg = {}; (m.schema || []).forEach(f => { const v = OK.readField(f, box); if (v !== undefined) cfg[f.key] = v; }); mods[m.id] = cfg; });
       c.modules = mods; OK.save(); msg.textContent = "Opgeslagen."; setTimeout(() => { editing = null; renderKids(); }, 400);
@@ -227,9 +282,11 @@
   function renderLists() {
     const root = $("ptab-lists"); root.innerHTML = ""; root.className = "stack ptab";
     const kids = S().children;
-    const box = el("div", "card stack"); root.appendChild(box);
-    const form = el("div", "stack"); form.id = "photo-block";
-    form.innerHTML = `<h3>Nieuwe lijst</h3>
+    const quick = el("div", "card stack", `<h3>Nieuwe leerstof</h3><p class="muted small">Foto van de bladzijde, nakijken, zeggen tegen wanneer. Meer is het niet.</p>`);
+    const qb = el("button", "btn big", "Nieuwe leerstof klaarzetten"); qb.type = "button"; qb.addEventListener("click", () => OK.openWizard()); quick.appendChild(qb); root.appendChild(quick);
+    const box = el("details", "card"); box.innerHTML = `<summary class="muted small">Lijst maken met alle opties (meerdere foto's samenvoegen, alleen opslaan zonder opdracht)</summary>`; box.open = !!draftItems; root.appendChild(box);
+    const form = el("div", "stack"); form.id = "photo-block"; form.style.marginTop = "14px";
+    form.innerHTML = `
       <div class="row"><label class="f">Naam van de lijst<input type="text" id="wl-name" placeholder="bv. Unité 4: à l'école"></label>
         <label class="f" style="max-width:240px">Vak<select id="wl-subject">${OK.SUBJECTS.map(s => `<option>${s}</option>`).join("")}<option value="__pack">Spelling (woordpakket)</option></select></label>
         <label class="f" style="max-width:200px">Voor wie<select id="wl-children"><option value="all">Iedereen</option>${kids.map(k => `<option value="${k.id}">${esc(k.name)}</option>`).join("")}</select></label></div>
@@ -432,7 +489,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     const reqBox = el("div", "card stack"); root.appendChild(reqBox); renderRequests(reqBox);
     const box = el("div", "card stack"); root.appendChild(box);
     box.appendChild(el("h3", null, "De winkel"));
-    box.appendChild(el("p", "muted small", "Jij bepaalt wat er te verdienen valt en wat het kost. Richtlijn: een sessie van 15 vragen levert zo'n 100 tot 150 coins op. Beloningen gelden alleen voor kinderen met de schatkiststijl."));
+    box.appendChild(el("p", "muted small", "Jij bepaalt wat er te verdienen valt en wat het kost. Richtlijn: een sessie van 15 vragen levert zo'n 100 tot 150 coins op."));
     const add = el("div", "row", `<label class="f">Beloning<input type="text" id="r-name" placeholder="bv. Half uur langer opblijven"></label><label class="f" style="max-width:140px">Kost<input type="number" id="r-cost" min="1" value="150"></label><label class="f" style="max-width:180px">Voor wie<select id="r-children"><option value="all">Iedereen</option>${kids.map(k => `<option value="${k.id}">${esc(k.name)}</option>`).join("")}</select></label>`);
     const b = el("button", "btn", "Toevoegen"); b.type = "button"; add.appendChild(b); box.appendChild(add);
     b.addEventListener("click", () => { const n = $("r-name").value.trim(), c = parseInt($("r-cost").value, 10); if (!n || !(c > 0)) return; const w = $("r-children").value; S().rewards.push({ id: OK.uid(), name: n, cost: c, children: w === "all" ? "all" : [w] }); OK.save(); renderRewards(); });
@@ -515,4 +572,186 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     armed(del, async () => { del.disabled = true; del.textContent = "Bezig met wissen..."; if (OK.backend.wipeFamily) { const r = await OK.backend.wipeFamily(); if (r && r.error) { msg.textContent = r.error; del.disabled = false; del.textContent = "Alles wissen en opnieuw beginnen"; return; } } OK.resetAll(!online); location.reload(); });
     box.appendChild(el("div", "row")).appendChild(del);
   }
+
+  /* ---------- nieuwe leerstof: stap voor stap, één vraag per scherm ---------- */
+  /* kind (naam en leerjaar) -> foto -> nakijken -> tegen wanneer -> doorgeven. Alles krijgt een standaardwaarde;
+     wat een ouder zelden aanpast (aantal vragen, toets, bonus) zit achter "Meer opties". */
+  let wz = null;
+  const WZ_N = { kid: 1, who: 1, photo: 2, type: 2, reading: 2, review: 3, when: 4, done: 0 };
+  const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
+  const localISO = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const wzHead = (title, sub) => el("div", "stack wz-head", `<h1>${esc(title)}</h1>${sub ? `<p class="muted">${esc(sub)}</p>` : ""}`);
+  const wzMsg = t => { const m = $("wz-msg"); if (m) m.textContent = t; };
+  OK.openWizard = function (childId) {
+    const kids = S().children;
+    wz = { child: childId || (kids.length === 1 ? kids[0].id : null), step: null, hist: [], items: [], verbs: [], name: "", subject: "Frans", listId: null, taskId: null };
+    OK.show("s-wizard"); wzGo(!kids.length ? "kid" : wz.child ? "photo" : "who");
+  };
+  function wzGo(step, noHist) {
+    if (wz.step && !noHist && wz.step !== "reading") wz.hist.push(wz.step);
+    wz.step = step; const n = WZ_N[step];
+    $("wz-step").textContent = n ? `Stap ${n} van 4` : ""; $("wz-bar").classList.toggle("hidden", !n);
+    [...$("wz-bar").children].forEach((i, k) => i.classList.toggle("on", k < n));
+    $("wz-back").textContent = wz.hist.length ? "Terug" : "Sluiten"; $("wz-back").classList.toggle("hidden", step === "done");
+    const body = $("wz-body"); body.innerHTML = ""; WZ[step](body); window.scrollTo(0, 0);
+  }
+  $("wz-back").addEventListener("click", () => { if (!wz) return; if (photoCtl) photoCtl.abort(); if (wz.hist.length) wzGo(wz.hist.pop(), true); else { wz = null; OK.openParent(); } });
+  const wzChild = () => OK.childById(wz.child);
+  const wzList = () => S().lists.find(l => l.id === wz.listId);
+
+  async function wzRead(files) {
+    const fn = await sampleAvailable(); if (!fn || !wz) return;
+    files = files.slice(0, fn.maxImages || 4); if (!files.length) return;
+    wz.listId = null; wzGo("reading"); photoCtl = new AbortController();
+    try {
+      const data = await fn.json(OK.photoPrompt(), { images: files, signal: photoCtl.signal });
+      if (!wz || wz.step !== "reading") return;
+      const items = Array.isArray(data.items) ? data.items.filter(w => w && w.q && w.a).map(w => ({ q: String(w.q), a: String(w.a), check: !!w.check })) : [];
+      if (!items.length) { wzGo("photo", true); wzMsg("Niets herkend. Probeer een scherpere foto, recht van boven, met goed licht."); return; }
+      wz.verbs = Array.isArray(data.verbs) ? data.verbs.filter(v => v && v.inf) : [];
+      const pack = items.every(w => w.q.trim().toLowerCase() === w.a.trim().toLowerCase());
+      wz.items = items; wz.name = data.title ? String(data.title) : ""; wz.subject = pack ? "__pack" : (OK.SUBJECTS.includes(data.subject) ? data.subject : "Andere");
+      wzGo("review", true);
+    } catch (e) { if (wz && wz.step === "reading") { wzGo("photo", true); wzMsg(OK.ai.errorText(e, "Lezen mislukt.")); } }
+    finally { photoCtl = null; }
+  }
+
+  const WZ = {
+    /* wie: bestaand kind kiezen of een nieuw toevoegen */
+    who(body) {
+      body.appendChild(wzHead("Voor wie is het?"));
+      const grid = el("div", "players");
+      S().children.forEach(c => { const b = el("button", "player", `${OK.avatarHTML(c)}<strong>${esc(c.name)}</strong><span class="muted small">${esc(OK.gradeName(c.grade))}</span>`); b.type = "button"; b.addEventListener("click", () => { wz.child = c.id; wzGo("photo"); }); grid.appendChild(b); });
+      body.appendChild(grid);
+      const nw = el("button", "btn ghost", "Nieuw kind toevoegen"); nw.type = "button"; nw.addEventListener("click", () => wzGo("kid")); body.appendChild(nw);
+    },
+    /* nieuw kind: alleen voornaam en leerjaar; de oefeningen voor dat leerjaar staan vanzelf klaar */
+    kid(body) {
+      body.appendChild(wzHead("Voor wie is het?", S().children.length ? "" : "Begin met één kind. De anderen voeg je straks toe."));
+      body.appendChild(el("label", "f", `Voornaam<input type="text" id="wz-name" autocomplete="off" autocapitalize="words">`));
+      body.appendChild(el("p", "muted small", "Leerjaar"));
+      let grade = null; const grid = el("div", "pickgrid"); const more = el("div", "pickgrid");
+      const next = el("button", "btn big wide", "Verder"); next.type = "button"; next.disabled = true;
+      const sync = () => { next.disabled = !($("wz-name").value.trim() && grade); };
+      OK.GRADE_IDS.forEach(g => { const b = el("button", "pick", esc(OK.gradeName(g))); b.type = "button"; b.addEventListener("click", () => { grade = g; body.querySelectorAll(".pick").forEach(x => x.classList.toggle("sel", x === b)); sync(); }); (g <= 6 ? grid : more).appendChild(b); });
+      body.appendChild(grid);
+      const det = el("details", null, `<summary class="muted small">Middelbaar</summary>`); more.style.marginTop = "10px"; det.appendChild(more); body.appendChild(det);
+      body.appendChild(el("p", "muted small", "Kenik zet de oefeningen voor dat leerjaar al klaar. Je hoeft niets aan te vinken."));
+      body.appendChild(next);
+      $("wz-name").addEventListener("input", sync); setTimeout(() => { const i = $("wz-name"); if (i) i.focus(); }, 50);
+      next.addEventListener("click", () => { const c = OK.addChild($("wz-name").value.trim(), grade); wz.child = c.id; wz.hist = []; wzGo("photo", true); });
+    },
+    /* foto eerst: geen naam, vak of instelling vooraf */
+    photo(body) {
+      const c = wzChild();
+      body.appendChild(wzHead(`Wat moet ${c.name} kennen?`, "Trek een foto van de bladzijde in het boek of schrift. Woordjes, begrippen of vervoegingen: Kenik leest ze zelf."));
+      const drop = el("button", "photo-drop", `<span class="photo-ico"><svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8 h3.5 l1.5 -2.5 h6 l1.5 2.5 h3.5 a1 1 0 0 1 1 1 v9.5 a1 1 0 0 1 -1 1 h-16 a1 1 0 0 1 -1 -1 v-9.5 a1 1 0 0 1 1 -1z"/><circle cx="12" cy="13.5" r="3.6"/></svg></span><strong>Foto maken of kiezen</strong><span class="muted small">Meerdere bladzijden mag</span>`); drop.type = "button";
+      const inp = el("input"); inp.type = "file"; inp.accept = "image/*"; inp.multiple = true; inp.className = "hidden";
+      drop.addEventListener("click", () => inp.click()); inp.addEventListener("change", () => wzRead([...inp.files]));
+      body.append(drop, inp); body.appendChild(el("p", "small", "")).id = "wz-msg";
+      const links = el("div", "stack wz-links");
+      const ex = S().lists.find(l => l.example && !l.pack && OK.forChild(l, c.id));
+      if (ex) { const b = el("button", "linklike", "Geen boek bij de hand? Probeer een voorbeeldlijst"); b.type = "button"; b.addEventListener("click", () => { wz.listId = ex.id; wzGo("when"); }); links.appendChild(b); }
+      const ty = el("button", "linklike", "Liever zelf typen of plakken"); ty.type = "button"; ty.addEventListener("click", () => wzGo("type")); links.appendChild(ty);
+      body.appendChild(links);
+      sampleAvailable().then(fn => { if (!fn && wz && wz.step === "photo") { drop.disabled = true; wzMsg(OK.ai.reason); } });
+    },
+    reading(body) {
+      body.appendChild(el("div", "stack wz-wait", `<div class="spinner" aria-hidden="true"></div><h2>Kenik leest de foto</h2><p class="muted">Dit duurt meestal 10 tot 40 seconden.</p>`));
+      const st = el("button", "btn ghost", "Stop"); st.type = "button"; st.addEventListener("click", () => { if (photoCtl) photoCtl.abort(); }); body.appendChild(st);
+    },
+    type(body) {
+      body.appendChild(wzHead("Typ of plak de lijst", "Eén paar per regel, met een streepje ertussen. Bij een woordpakket: één woord per regel."));
+      body.appendChild(el("label", "f", `Vak<select id="wz-tsubject">${OK.SUBJECTS.map(x => `<option ${x === wz.subject ? "selected" : ""}>${x}</option>`).join("")}<option value="__pack" ${wz.subject === "__pack" ? "selected" : ""}>Spelling (woordpakket)</option></select>`));
+      const ta = el("textarea"); ta.id = "wz-text"; ta.placeholder = "de hond - le chien\nhet huis - la maison\nzoeken - chercher"; body.appendChild(ta);
+      body.appendChild(el("p", "small", "")).id = "wz-msg";
+      const next = el("button", "btn big wide", "Verder"); next.type = "button"; body.appendChild(next);
+      next.addEventListener("click", () => {
+        const sub = $("wz-tsubject").value, pack = sub === "__pack";
+        const items = pack ? ta.value.split(/\r?\n|,|;/).map(w => w.trim()).filter(Boolean).map(w => ({ q: w, a: w })) : OK.parseList(ta.value, "q-a").map(x => ({ q: x[0], a: x[1] }));
+        if (!items.length) { wzMsg(pack ? "Geen woorden herkend. Eén per regel." : "Geen paren herkend. Eén per regel, met een streepje ertussen."); return; }
+        wz.items = items; wz.verbs = []; wz.subject = sub; wz.listId = null; wzGo("review");
+      });
+    },
+    /* nakijken: Kenik stelt naam en vak voor, twijfelgevallen zijn gemarkeerd */
+    review(body) {
+      const pack = wz.subject === "__pack", foreign = !pack && OK.langFor(wz.subject) !== "nl";
+      body.appendChild(wzHead("Klopt dit?", `${wz.items.length} ${pack || foreign ? "woorden" : "paren"} gevonden. Verbeter wat fout gelezen is.`));
+      body.appendChild(el("div", "row", `<label class="f">Naam<input type="text" id="wz-lname" value="${esc(wz.name)}" placeholder="bv. Unité 4: à l'école"></label><label class="f" style="max-width:220px">Vak<select id="wz-subject">${OK.SUBJECTS.map(x => `<option ${x === wz.subject ? "selected" : ""}>${x}</option>`).join("")}<option value="__pack" ${pack ? "selected" : ""}>Spelling (woordpakket)</option></select></label>`));
+      const tw = el("div", "table-wrap", `<table class="review"><thead><tr><th>${pack ? "Woord" : foreign ? "Nederlands" : "Vraag"}</th>${pack ? "" : `<th>${foreign ? esc(wz.subject) : "Antwoord"}</th>`}<th></th></tr></thead><tbody></tbody></table>`); body.appendChild(tw);
+      const tb = tw.querySelector("tbody");
+      const read = () => { wz.name = $("wz-lname").value; wz.items = [...tb.querySelectorAll("tr")].map(tr => ({ q: tr.querySelector("[data-q]").value, a: (tr.querySelector("[data-a]") || tr.querySelector("[data-q]")).value, check: tr.classList.contains("check") })); };
+      const draw = () => { tb.innerHTML = ""; wz.items.forEach((it, i) => {
+        const tr = el("tr", it.check ? "check" : "", `<td><input type="text" data-q value="${esc(it.q)}"></td>${pack ? "" : `<td><input type="text" data-a value="${esc(it.a)}">${it.check ? `<span class="checknote">Even nakijken</span>` : ""}</td>`}<td><button class="x" type="button" title="Schrappen" aria-label="Schrappen">✕</button></td>`);
+        tr.querySelector(".x").addEventListener("click", () => { read(); wz.items.splice(i, 1); draw(); });
+        tr.addEventListener("input", () => { tr.classList.remove("check"); const n = tr.querySelector(".checknote"); if (n) n.remove(); });
+        tb.appendChild(tr); }); };
+      draw();
+      const addr = el("button", "pill-btn", "+ regel"); addr.type = "button"; addr.addEventListener("click", () => { read(); wz.items.push({ q: "", a: "" }); draw(); const rows = tb.querySelectorAll("tr"); rows[rows.length - 1].querySelector("input").focus(); }); body.appendChild(el("div", "row")).appendChild(addr);
+      $("wz-subject").addEventListener("change", () => { read(); wz.subject = $("wz-subject").value; wzGo("review", true); });
+      body.appendChild(el("p", "small", "")).id = "wz-msg";
+      const save = el("button", "btn big wide", "Klopt, opslaan"); save.type = "button"; body.appendChild(save);
+      save.addEventListener("click", () => {
+        read(); const name = wz.name.trim();
+        const items = wz.items.map(x => pack ? [x.q.trim().toLowerCase(), x.q.trim().toLowerCase()] : [x.q.trim(), x.a.trim()]).filter(x => x[0] && x[1]);
+        if (!name) { wzMsg("Geef de lijst eerst een naam."); $("wz-lname").focus(); return; }
+        if (!items.length) { wzMsg("Er staat niets om op te slaan."); return; }
+        const subject = pack ? "Nederlands" : wz.subject; const data = { name, subject, lang: OK.langFor(subject), children: [wz.child], items, pack };
+        let l = wzList(); if (l && !l.example) Object.assign(l, data); else { l = Object.assign({ id: OK.uid(), created: OK.nowISO() }, data); S().lists.push(l); wz.listId = l.id; }
+        wz.verbs.forEach(v => { if ((v.lang || "fr") !== "fr") return; OK.addVerb(String(v.inf), String(v.nl || ""), Array.isArray(v.forms) && v.forms.length === 6 ? v.forms.map(String) : null); }); wz.verbs = [];
+        OK.save(); S().children.forEach(c => OK.syncVerbsFromLists(c)); wzGo("when");
+      });
+    },
+    /* één vraag die de opdracht aanmaakt */
+    when(body) {
+      const c = wzChild(), l = wzList(); if (!l) { wzGo("photo", true); return; }
+      body.appendChild(wzHead(`Tegen wanneer moet ${c.name} dit kennen?`, `${l.name}, ${l.items.length} ${l.pack || (l.lang && l.lang !== "nl") ? "woorden" : "vragen"}`));
+      let due; const opts = el("div", "stack wz-opts");
+      const next = el("button", "btn big wide", "Klaarzetten"); next.type = "button"; next.disabled = true;
+      const pick = (b, v) => { due = v; opts.querySelectorAll(".opt-row").forEach(x => x.classList.toggle("sel", x === b)); next.disabled = v === undefined; };
+      const row = (label, sub, v) => { const b = el("button", "opt-row", `<span>${esc(label)}</span><span class="muted small">${esc(sub || "")}</span>`); b.type = "button"; b.addEventListener("click", () => pick(b, v)); opts.appendChild(b); return b; };
+      for (let k = 1, n = 0; n < 3 && k < 10; k++) { const d = new Date(); d.setDate(d.getDate() + k); if (d.getDay() === 0 || d.getDay() === 6) continue; n++;
+        row(k === 1 ? "Morgen" : cap(d.toLocaleDateString("nl-BE", { weekday: "long" })), d.toLocaleDateString("nl-BE", k === 1 ? { weekday: "long", day: "numeric", month: "long" } : { day: "numeric", month: "long" }), localISO(d)); }
+      const other = el("label", "opt-row", `<span>Andere dag</span><input type="date" id="wz-date" min="${localISO(new Date())}">`); opts.appendChild(other);
+      other.querySelector("input").addEventListener("change", e => pick(other, e.target.value || undefined));
+      row("Geen datum, gewoon oefenen", "", null);
+      body.appendChild(opts);
+      body.appendChild(el("p", "muted small", `${esc(c.name)} ziet dit bovenaan bij het openen van Kenik. Jij ziet wanneer het gekend is.`));
+      const det = el("details", "wz-more", `<summary class="linklike">Meer opties: aantal vragen, toets, bonus</summary>
+        <div class="row" style="margin-top:12px"><label class="f" style="max-width:170px">Vragen per beurt<select id="wz-count"><option>10</option><option ${c.grade > 2 ? "selected" : ""}>15</option><option>20</option><option>30</option></select></label>
+        <label class="f">Vorm<select id="wz-mode"><option value="practice">Oefenen tot het gekend is</option><option value="test">Eén toets</option></select></label>
+        <label class="f" style="max-width:150px">Bonus (coins)<input type="number" id="wz-bonus" min="0" value="50"></label></div>`); body.appendChild(det);
+      body.appendChild(next);
+      next.addEventListener("click", () => {
+        if (due === undefined) return;
+        if (wz.taskId) S().tasks = S().tasks.filter(t => t.id !== wz.taskId);
+        const module = l.pack ? "spelling" : "lijsten", m = OK.modules[module];
+        const config = l.pack ? { types: ["dictee", "kies"], packs: [], own: [l.id] } : { lists: [l.id], dir: "q-a" };
+        if (!c.modules[module]) c.modules[module] = (m.defaultsFor && m.defaultsFor(c.grade, OK.region())) || (l.pack ? { types: ["dictee", "kies"], packs: [], own: "all" } : { lists: "all", dir: "q-a" });
+        const t = { id: OK.uid(), child: c.id, module, config, mode: $("wz-mode").value, count: +$("wz-count").value, due: due || null, bonus: Math.max(0, +$("wz-bonus").value || 0), status: "open", created: OK.nowISO() };
+        S().tasks.push(t); wz.taskId = t.id; OK.save(); wzGo("done");
+      });
+    },
+    /* doorgeven: hier, en niet bij het inloggen, komt de vraag op welk toestel het kind oefent */
+    done(body) {
+      const c = wzChild(), l = wzList(), t = S().tasks.find(x => x.id === wz.taskId);
+      body.appendChild(el("span", "done-ico", `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 l4.5 4.5 l9.5 -10"/></svg>`));
+      body.appendChild(wzHead(`Klaar. Nu is het aan ${c.name}.`, `${l ? l.name : "De leerstof"} staat klaar${t && t.due ? " " + OK.dueText(t).toLowerCase() : ""}. Waar gaat ${c.name} oefenen?`));
+      const here = el("button", "way primary", `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5 h3"/></svg><span><strong>Op dit toestel</strong><span class="small">Geef het door, ${esc(c.name)} kan meteen starten</span></span>`); here.type = "button";
+      const there = el("button", "way", `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1"/><rect x="14" y="3.5" width="6.5" height="6.5" rx="1"/><rect x="3.5" y="14" width="6.5" height="6.5" rx="1"/><path d="M14 14 h3 v3 M20.5 14 v6.5 h-6.5 v-0.5"/></svg><span><strong>Op een ander toestel</strong><span class="small muted">Toon een QR-code om te scannen</span></span>`); there.type = "button";
+      const extra = el("div", "stack"); body.append(here, there, extra);
+      const handOver = () => { const ses = OK.session() || {}; OK.setSession(Object.assign({}, ses, { type: "family" })); S().current = c.id; OK.save(); wz = null; OK.renderHome(); };
+      here.addEventListener("click", () => {
+        if (S().pin) { handOver(); return; }
+        /* op een toestel dat de kinderen gebruiken zit het ouderdeel achter een code */
+        extra.innerHTML = ""; const box = el("div", "card stack", `<p>Kies eerst een oudercode van 4 tot 6 cijfers. Daarmee blijft het ouderdeel op dit toestel van jou.</p><div class="row"><input type="password" id="wz-pin" inputmode="numeric" maxlength="6" placeholder="code" style="max-width:160px"><button class="btn" type="button" id="wz-pin-ok">Doorgeven</button></div><p class="small" id="wz-msg" style="color:var(--rose)"></p>`); extra.appendChild(box);
+        $("wz-pin").focus(); $("wz-pin-ok").addEventListener("click", () => { const v = $("wz-pin").value.trim(); if (!/^\d{4,6}$/.test(v)) { wzMsg("4 tot 6 cijfers."); return; } S().pin = v; OK.save(); handOver(); });
+      });
+      there.addEventListener("click", () => { extra.innerHTML = ""; extra.appendChild(devicePanel(c)); });
+      const links = el("div", "stack wz-links");
+      const again = el("button", "linklike", "Nog een kind toevoegen"); again.type = "button"; again.addEventListener("click", () => { wz = { child: null, step: null, hist: [], items: [], verbs: [], name: "", subject: "Frans", listId: null, taskId: null }; wzGo("kid"); });
+      const home = el("button", "linklike", "Naar mijn overzicht"); home.type = "button"; home.addEventListener("click", () => { wz = null; OK.openParent(); });
+      links.append(again, home); body.appendChild(links);
+    }
+  };
 })(window.OK);

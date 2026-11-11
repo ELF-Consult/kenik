@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1b1f3a">
+<meta name="theme-color" content="#f5f6f8">
 <title>Kenik</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Manrope:wght@600;700;800&family=Fredoka:wght@500;600;700&family=Nunito:wght@700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap">
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 
 <div class="app">
   <div class="topbar">
-    <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 4 h20 a4 4 0 0 1 4 4 v12 a4 4 0 0 1 -4 4 h-9 l-6 5 v-5 h-5 a4 4 0 0 1 -4 -4 v-12 a4 4 0 0 1 4 -4z" fill="#5b8cff"/><path d="M10 14.5 l4 4 l8 -8.5" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="brand-name">Kenik</span></div>
+    <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 4 h20 a4 4 0 0 1 4 4 v12 a4 4 0 0 1 -4 4 h-9 l-6 5 v-5 h-5 a4 4 0 0 1 -4 -4 v-12 a4 4 0 0 1 4 -4z" class="logo-bg"/><path d="M10 14.5 l4 4 l8 -8.5" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="brand-name">Kenik</span></div>
     <div class="row">
-      <div class="coins hidden" id="coins"><span class="coin"></span><span id="coin-count">0</span></div>
+      <button class="coins hidden" id="coins" type="button" title="Naar de winkel"><span class="coin"></span><span id="coin-count">0</span></button>
       <button class="whobadge hidden" id="btn-switch" type="button" title="Ander kind kiezen"><span id="who-avatar"></span><span id="who-name"></span><span class="who-sub" id="who-sub"></span></button>
       <button class="pill-btn" id="btn-parent" type="button" data-i18n="parents">Ouders</button>
       <button class="pill-btn hidden" id="btn-admin" type="button">Beheer</button><button class="pill-btn hidden" id="btn-logout" type="button">Afmelden</button>
@@ -28,7 +28,7 @@
       <p class="hero-sub">Kenik vraagt je kinderen hun leerstof af, zodat jij dat niet elke avond zelf hoeft te doen. Jij kiest wat ze moeten kennen, zij oefenen en verdienen, en jij ziet of het er echt in zit.</p>
     </div>
     <div class="grid2">
-      <button class="card stack landing-btn" id="btn-land-parent" type="button"><span class="land-icon" style="background:var(--blue)"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="19" cy="11" r="6.5" fill="#fff"/><path d="M8 40 v-12 c0 -7 5 -10 11 -10 s11 3 11 10 v12 z" fill="#fff"/><circle cx="36" cy="22" r="4.5" fill="#fff"/><path d="M29.5 40 v-6 c0 -5 3 -7.5 6.5 -7.5 s6.5 2.5 6.5 7.5 v6 z" fill="#fff" stroke="var(--blue)" stroke-width="2"/></svg></span><h2>Ik ben ouder</h2><p class="muted small">Inloggen met je e-mail. Kinderen toevoegen, lijsten maken, opdrachten geven, resultaten bekijken.</p></button>
+      <button class="card stack landing-btn" id="btn-land-parent" type="button"><span class="land-icon" style="background:var(--blue)"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="19" cy="11" r="6.5" fill="#fff"/><path d="M8 40 v-12 c0 -7 5 -10 11 -10 s11 3 11 10 v12 z" fill="#fff"/><circle cx="36" cy="22" r="4.5" fill="#fff"/><path d="M29.5 40 v-6 c0 -5 3 -7.5 6.5 -7.5 s6.5 2.5 6.5 7.5 v6 z" fill="#fff" stroke="var(--blue)" stroke-width="2"/></svg></span><h2>Ik ben ouder</h2><p class="muted small">Inloggen met je e-mail. Zet klaar wat je kind moet kennen en zie of het erin zit.</p></button>
       <button class="card stack landing-btn" id="btn-land-child" type="button"><span class="land-icon" style="background:var(--mint)"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M12 22 c0 -9 5 -14 12 -14 s12 5 12 14 z" fill="#1b6b45"/><circle cx="24" cy="24" r="10.5" fill="#fff"/><path d="M13.5 22 c1 -5 4 -8 10.5 -8 c3 0 5 1.5 6 3 c-2 1.5 -8 3 -16.5 5 z" fill="#1b6b45"/><circle cx="20" cy="24.5" r="1.6" fill="#1b6b45"/><circle cx="28" cy="24.5" r="1.6" fill="#1b6b45"/><path d="M20 29 q4 3.5 8 0" stroke="#1b6b45" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M11 44 c0 -7 6 -10 13 -10 s13 3 13 10 z" fill="#fff"/></svg></span><h2>Ik ben een kind</h2><p class="muted small">Scan de QR-code van papa of mama, of typ de korte code.</p></button>
     </div>
     <div class="card stack hidden" id="land-parent">
@@ -44,11 +44,6 @@
       <div id="land-scan" class="hidden"><video id="land-video" playsinline style="width:100%;max-width:360px;border-radius:12px"></video></div>
       <p class="small" id="land-child-msg"></p>
     </div>
-    <div class="card stack hidden" id="land-device">
-      <h3>Is dit een gezinstoestel?</h3>
-      <p class="muted small">Op een gezinstoestel (de tablet in de living) blijven de kinderen aangemeld en kiezen ze gewoon hun naam. Op jouw eigen telefoon of laptop kies je beter "nee": dan open je meteen het ouderpaneel.</p>
-      <div class="row"><button class="btn" id="btn-dev-family" type="button">Ja, gezinstoestel</button><button class="btn ghost" id="btn-dev-parent" type="button">Nee, alleen voor mij</button></div>
-    </div>
   </section>
 
   <!-- Wie ben jij -->
@@ -58,36 +53,26 @@
     <p class="muted small" id="who-hint" data-i18n="who_hint">Nog geen kinderen. Klik op "Ouders" om een kind toe te voegen.</p>
   </section>
 
-  <!-- Thuis -->
+  <!-- Thuis: eerst wat te doen staat, dan het spaardoel, dan vrij oefenen -->
   <section class="stack hidden" id="s-home">
-    <section class="garden hidden" id="garden"></section>
-    <div class="card stack hidden" id="todo-card" style="border-color:var(--coin)">
-      <div class="q-head"><h3 id="todo-title">Te doen</h3><span class="tag warn" id="todo-count"></span></div>
+    <div class="hero-task" id="todo-hero"></div>
+    <div class="card stack hidden" id="todo-card">
+      <h3 id="todo-title">Ook nog te doen</h3>
       <div class="list" id="todo-list"></div>
     </div>
-    <div class="card stack" id="home-stats">
-      <div class="q-head"><h2 id="hello"></h2><span class="tag" id="streak-tag"></span></div>
-      <div class="stats">
-        <div class="stat"><b id="st-today">0</b><span data-i18n="today">oefeningen vandaag</span></div>
-        <div class="stat"><b id="st-goal">0</b><span data-i18n="goal">dagdoel</span></div>
-        <div class="stat"><b id="st-week">0</b><span data-i18n="week">coins deze week</span></div>
-        <div class="stat"><b id="st-best">0</b><span data-i18n="best">beste reeks</span></div>
+    <div class="card stack hidden" id="goal-card"></div>
+    <details class="card" id="practice-card">
+      <summary><h3 id="practice-title">Iets anders oefenen</h3></summary>
+      <div class="stack" style="margin-top:14px">
+        <div class="chips small-chips" id="practice-modes">
+          <label class="chip"><input type="radio" name="pmode" value="now" checked><span>Meteen starten</span></label>
+          <label class="chip"><input type="radio" name="pmode" value="pick"><span>Zelf kiezen</span></label>
+          <label class="chip"><input type="radio" name="pmode" value="test"><span>Toets</span></label>
+        </div>
+        <div class="modbtns" id="practice-btns"></div>
       </div>
-      <div class="bar"><i id="goal-bar"></i></div>
-      <p class="muted small" id="goal-text"></p>
-    </div>
-    <div class="card stack">
-      <div class="q-head"><h3 id="practice-title">Oefenen</h3><span class="muted small" id="practice-sub"></span></div>
-      <div class="modbtns" id="practice-btns"></div>
-    </div>
-    <div class="card stack" id="test-card">
-      <div class="q-head"><h3 data-i18n="test">Toets</h3><span class="muted small" data-i18n="test_sub">Zonder hints, score op het einde, bonus bij 90% of meer.</span></div>
-      <div class="modbtns" id="test-btns"></div>
-    </div>
-    <div class="card stack" id="shop-card">
-      <div class="q-head"><h3 data-i18n="shop">De winkel</h3><button class="pill-btn" id="btn-shop" type="button" data-i18n="shop_all">Alles bekijken</button></div>
-      <div class="shop" id="shop-preview"></div>
-    </div>
+    </details>
+    <button class="btn ghost shop-link" id="btn-shop" type="button">Naar de winkel</button>
   </section>
 
   <!-- Instellen voor een beurt -->
@@ -99,30 +84,46 @@
     <div class="row"><button class="btn mint big" id="btn-go" type="button" data-i18n="start">Start</button><button class="btn ghost" data-go="home" type="button" data-i18n="back">Terug</button></div>
   </section>
 
-  <!-- Spelen -->
-  <section class="card stack hidden" id="s-play">
-    <div class="q-head"><span class="muted" id="play-progress"></span><span class="tag" id="play-mode"></span></div>
-    <div class="bar"><i id="play-bar"></i></div>
-    <div class="playgrow hidden" id="play-grow"></div>
-    <div class="q" id="question"></div>
+  <!-- Spelen: één vraag per scherm, feedback schuift onderaan in beeld -->
+  <section class="stack hidden" id="s-play">
+    <div class="playtop">
+      <button class="iconbtn" id="btn-quit" type="button" aria-label="Stoppen" title="Stoppen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6 l12 12 M18 6 l-12 12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
+      <div class="bar"><i id="play-bar"></i></div>
+      <span class="muted small" id="play-progress"></span>
+    </div>
+    <div class="card stack qcard">
+      <span class="tag hidden" id="play-mode"></span>
+      <div class="q" id="question"></div>
+    </div>
     <div class="stack" id="input-area"></div>
     <div class="feedback" id="feedback"></div>
     <div class="hint hidden" id="hint"></div>
-    <div class="row between"><button class="btn ghost" id="btn-skip" type="button" data-i18n="dont_know">Weet ik niet</button><button class="btn ghost" id="btn-quit" type="button" data-i18n="stop">Stoppen</button></div>
+    <div class="row" style="justify-content:center"><button class="linklike quiet" id="btn-skip" type="button" data-i18n="dont_know">Weet ik niet</button></div>
+    <div class="sheet-space"></div>
+    <div class="sheet hidden" id="sheet" role="status" aria-live="polite">
+      <div class="sheet-in">
+        <div class="sheet-head"><strong id="sheet-title"></strong><span class="sheet-pts hidden" id="sheet-pts"></span></div>
+        <div class="sheet-body" id="sheet-body"></div>
+        <button class="btn big" id="btn-sheet" type="button" data-i18n="next">Verder</button>
+      </div>
+    </div>
   </section>
 
   <!-- Resultaat -->
-  <section class="card stack hidden" id="s-result">
-    <h2 id="result-title"></h2>
-    <div class="stats" id="result-stats"></div>
-    <div id="result-list" class="list"></div>
-    <div class="row"><button class="btn" id="btn-again" type="button" data-i18n="again">Nog eens</button><button class="btn ghost" data-go="home" type="button" data-i18n="home">Naar start</button></div>
+  <section class="stack hidden" id="s-result">
+    <div class="card stack">
+      <h2 id="result-title"></h2>
+      <div class="stats" id="result-stats"></div>
+      <div id="result-list" class="list"></div>
+    </div>
+    <div class="card stack hidden" id="result-goal"></div>
+    <div class="row"><button class="btn big" data-go="home" type="button" data-i18n="next">Verder</button><button class="btn ghost" id="btn-again" type="button" data-i18n="again">Nog eens</button></div>
   </section>
 
   <!-- Winkel -->
-  <section class="card stack hidden" id="s-shop">
+  <section class="stack hidden" id="s-shop">
     <div class="q-head"><h2 data-i18n="shop">De winkel</h2><button class="btn ghost" data-go="home" type="button" data-i18n="back">Terug</button></div>
-    <p class="muted small" data-i18n="shop_hint">Je wisselt coins in; papa of mama keurt het goed. Tot dan staat het op "aangevraagd".</p>
+    <p class="muted small" data-i18n="shop_hint">Kies iets met je coins. Papa of mama keurt het goed.</p>
     <div class="shop" id="shop"></div>
     <h3 data-i18n="my_requests">Mijn aanvragen</h3>
     <div class="list" id="my-requests"></div>
@@ -137,23 +138,25 @@
     <button class="btn ghost" data-go="back" type="button">Terug</button>
   </section>
 
-  <!-- Ouderpaneel -->
+  <!-- Nieuwe leerstof: stap voor stap, één vraag per scherm -->
+  <section class="stack hidden" id="s-wizard">
+    <div class="wz-top"><button class="linklike quiet" id="wz-back" type="button">Terug</button><span class="muted small" id="wz-step"></span></div>
+    <div class="wz-bar" id="wz-bar"><i></i><i></i><i></i><i></i></div>
+    <div class="stack wz-body" id="wz-body"></div>
+  </section>
+
+  <!-- Ouderpaneel: drie ingangen -->
   <section class="stack hidden" id="s-parent">
-    <div class="card stack">
-      <div class="q-head"><h2 data-i18n="parent_panel">Ouderpaneel</h2><button class="btn ghost" id="btn-parent-exit" type="button" data-i18n="close">Sluiten</button></div>
-      <div class="tabs" id="ptabs">
-        <button class="tab active" data-tab="kids" type="button" data-i18n="tab_kids">Kinderen</button>
-        <button class="tab" data-tab="tasks" type="button" data-i18n="tab_tasks">Opdrachten</button>
-        <button class="tab" data-tab="rewards" type="button" data-i18n="tab_rewards">Beloningen</button>
-        <button class="tab" data-tab="lists" type="button" data-i18n="tab_lists">Lijsten</button>
-        <button class="tab" data-tab="verbs" type="button" data-i18n="tab_verbs">Werkwoorden</button>
-        <button class="tab" data-tab="results" type="button" data-i18n="tab_results">Resultaten</button>
-        <button class="tab" data-tab="family" type="button">Gezin</button>
-        <button class="tab" data-tab="settings" type="button" data-i18n="tab_settings">Instellingen</button>
-        <button class="tab hidden" data-tab="admin" type="button" id="tab-admin" style="display:none">Beheer</button>
-      </div>
+    <div class="tabs main" id="ptabs">
+      <button class="tab active" data-main="home" type="button">Overzicht</button>
+      <button class="tab" data-main="stof" type="button">Leerstof</button>
+      <button class="tab" data-main="meer" type="button">Meer</button>
+      <span class="grow"></span>
+      <button class="btn ghost" id="btn-parent-exit" type="button">Naar de kinderen</button>
     </div>
-    <div class="card stack ptab" id="ptab-kids"></div>
+    <div class="tabs sub hidden" id="psub"></div>
+    <div class="stack ptab" id="ptab-home"></div>
+    <div class="card stack ptab hidden" id="ptab-kids"></div>
     <div class="stack ptab hidden" id="ptab-admin"></div>
     <div class="card stack ptab hidden" id="ptab-tasks"></div>
     <div class="card stack ptab hidden" id="ptab-lists"></div>
@@ -165,16 +168,6 @@
   </section>
 </div>
 
-<div class="overlay hidden" id="overlay">
-  <div class="ocard">
-    <div class="big-fig" id="overlay-fig"></div>
-    <h2 id="overlay-title"></h2>
-    <p id="overlay-text"></p>
-    <div class="row" style="justify-content:center;margin-top:18px">
-      <button class="btn big" id="btn-overlay-ok" type="button" data-i18n="next">Verder</button>
-    </div>
-  </div>
-</div>
 <div class="confetti" id="confetti"></div>
 
 <script src="js/state.js"></script>
@@ -186,7 +179,6 @@
 <script src="js/auth.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="js/engine.js"></script>
-<script src="js/themes.js"></script>
 <script src="js/content/lists.js"></script>
 <script src="js/content/frans.js"></script>
 <script src="js/content/engels.js"></script>

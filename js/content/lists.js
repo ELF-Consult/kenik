@@ -56,8 +56,9 @@ Haal eruit:
 1. Alle te leren paren als "vraag" en "antwoord". Bij een vreemde taal: "q" is het Nederlands en "a" is het woord in de vreemde taal, met lidwoord bij zelfstandige naamwoorden (le, la, l', un, une, the...). Bij begrippen of WO: "q" is het begrip of de vraag, "a" is de definitie of het antwoord, kort. Bij meerdere juiste antwoorden: scheid met een komma.
 2. Werkwoorden waarvan een vervoegingstabel te zien is: infinitief, Nederlandse vertaling, taal, en de zes vormen (je, tu, il/elle, nous, vous, ils/elles voor Frans; I, you, he/she/it, we, you, they voor Engels). Staat enkel de infinitief, zet forms op null.
 Verzin niets dat niet op de foto's staat. Laat opdrachten, instructies en paginanummers weg. Als een vertaling ontbreekt, geef zelf de juiste.
+Twijfel je over een paar (onscherp, moeilijk leesbaar handschrift, een accent dat er misschien staat, een vertaling die je zelf aanvulde), zet er dan "check": true bij. Laat "check" weg als je zeker bent.
 Antwoord met enkel JSON, zonder uitleg:
-{"title": "korte titel, bv. Unité 3: la famille", "subject": "Frans|Engels|Nederlands|Wereldoriëntatie|Wiskunde|Andere", "lang": "fr|en|nl", "items": [{"q": "de hond", "a": "le chien"}], "verbs": [{"inf": "chercher", "nl": "zoeken", "lang": "fr", "forms": ["cherche","cherches","cherche","cherchons","cherchez","cherchent"]}]}`;
+{"title": "korte titel, bv. Unité 3: la famille", "subject": "Frans|Engels|Nederlands|Wereldoriëntatie|Wiskunde|Andere", "lang": "fr|en|nl", "items": [{"q": "de hond", "a": "le chien"}, {"q": "de lat", "a": "la règle", "check": true}], "verbs": [{"inf": "chercher", "nl": "zoeken", "lang": "fr", "forms": ["cherche","cherches","cherche","cherchons","cherchez","cherchent"]}]}`;
   };
 })(window.OK);
 

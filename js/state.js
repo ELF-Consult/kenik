@@ -17,7 +17,7 @@ window.OK = window.OK || {};
       version: 1,
       pin: null,
       current: null,          // id van het actieve kind
-      children: [],           // {id,name,grade,theme:{style,variant},modules:{id:config},points,streak,best,garden:{flowers,collected:[]}}
+      children: [],           // {id,name,grade,modules:{id:config},points,streak,best}  (theme en garden blijven enkel bestaan voor oude data)
       lists: [],              // {id,name,subject,lang,children:'all'|[ids],items:[[q,a]],example?}
       rewards: [],            // {id,name,cost,children:'all'|[ids]}
       requests: [],           // {id,child,reward,cost,d,status:'open'|'ok'|'no'}
@@ -50,7 +50,8 @@ window.OK = window.OK || {};
     Object.keys(f.settings).forEach(k => { if (s.settings[k] === undefined) s.settings[k] = f.settings[k]; });
     const oldFr = s.lists.find(l => l.id === "ex-frans"); if (oldFr && !oldFr.v3) { const f = fresh(); seed(f); const nf = f.lists.find(l => l.id === "ex-frans"); Object.assign(oldFr, nf, { children: oldFr.children }); }
     if (!s.lists.some(l => l.id === "ex-engels")) { const f = fresh(); seed(f); s.lists.push(f.lists.find(l => l.id === "ex-engels")); }
-    s.children.forEach(c => { c.modules = c.modules || {}; c.garden = c.garden || { flowers: 0, collected: [] }; c.points = c.points || 0; c.streak = c.streak || 0; c.best = c.best || 0; });
+    /* de werelden zijn weg: elk kind werkt met coins en de winkel. theme en garden blijven als veld bestaan omdat de database ze verwacht. */
+    s.children.forEach(c => { c.modules = c.modules || {}; c.theme = { style: "kist" }; c.garden = c.garden || { flowers: 0, collected: [] }; c.points = c.points || 0; c.streak = c.streak || 0; c.best = c.best || 0; });
   }
 
   /* Voorbeeldinhoud, duidelijk als voorbeeld gemarkeerd. */
@@ -97,8 +98,8 @@ window.OK = window.OK || {};
     });
     return out;
   };
-  OK.addChild = function (name, grade, theme) {
-    const c = { id: OK.uid(), name, grade, theme, modules: OK.defaultModulesFor(grade), points: 0, streak: 0, best: 0, garden: { flowers: 0, collected: [] }, created: OK.nowISO() };
+  OK.addChild = function (name, grade) {
+    const c = { id: OK.uid(), name, grade, theme: { style: "kist" }, modules: OK.defaultModulesFor(grade), points: 0, streak: 0, best: 0, garden: { flowers: 0, collected: [] }, created: OK.nowISO() };
     S.children.push(c); OK.save(); return c;
   };
 
@@ -126,4 +127,30 @@ window.OK = window.OK || {};
     return S.stats[childId][key] = S.stats[childId][key] || { ok: 0, wrong: 0, t: 0, last: 0 };
   };
   OK.statsOf = childId => S.stats[childId] || {};
+
+  /* "Kent hij het?": een item is gekend als het laatste antwoord meteen juist was (zonder tweede poging).
+     Oudere statistieken hebben dat veld nog niet: daar telt "vaker juist dan fout". */
+  OK.itemKnown = s => !!s && s.ok > 0 && (s.lastOk === undefined ? s.ok >= s.wrong : s.lastOk);
+  OK.listProgress = function (childId, list) {
+    const st = OK.statsOf(childId), unknown = [];
+    list.items.forEach((it, i) => { if (!OK.itemKnown(st[`w|${list.id}|${i}|f`]) && !OK.itemKnown(st[`w|${list.id}|${i}|n`])) unknown.push(it); });
+    return { total: list.items.length, known: list.items.length - unknown.length, unknown };
+  };
+  /* de lijsten waar een opdracht over gaat (enkel opdrachten op concrete lijsten), anders null */
+  OK.taskLists = function (task) {
+    if (!task || task.module !== "lijsten" || task.mode === "test" || !task.config || !Array.isArray(task.config.lists)) return null;
+    const ls = S.lists.filter(l => task.config.lists.includes(l.id)); return ls.length ? ls : null;
+  };
+  OK.taskProgress = function (task, childId) {
+    const ls = OK.taskLists(task); if (!ls) return null;
+    const out = { total: 0, known: 0, unknown: [] };
+    ls.forEach(l => { const p = OK.listProgress(childId, l); out.total += p.total; out.known += p.known; out.unknown = out.unknown.concat(p.unknown); });
+    return out;
+  };
+  OK.taskTitle = function (task) {
+    const ls = OK.taskLists(task); if (ls) return ls.map(l => l.name).join(", ");
+    const m = OK.modules[task.module]; if (!m) return task.module;
+    if (task.module === "lijsten" && task.config && Array.isArray(task.config.lists)) { const n = S.lists.filter(l => task.config.lists.includes(l.id)).map(l => l.name).join(", "); if (n) return n + (task.mode === "test" ? " (toets)" : ""); }
+    return m.name + (task.mode === "test" ? " (toets)" : "");
+  };
 })(window.OK);

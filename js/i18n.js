@@ -19,13 +19,13 @@
   /* schermteksten; sleutel = korte Engelse naam, waarde per taal */
   const UI = {
     nl: {
-      who: "Wie ben jij?", who_hint: "Nog geen kinderen. Klik op \"Ouders\" om een kind toe te voegen.", parents: "Ouders", switch: "Wissel",
+      who: "Wie ben jij?", who_hint: "Nog geen kinderen. Papa of mama voegt er een toe via \"Ouders\".", parents: "Ouders", switch: "Wissel",
       todo: "Te doen", todo_parents: "Opdracht van papa en mama", practice: "Oefenen", practice_sub: "Het systeem kiest wat je nog niet goed kent.",
       test: "Toets", test_sub: "Zonder hints, score op het einde, bonus bij 90% of meer.", shop: "De winkel", shop_all: "Alles bekijken",
       today: "oefeningen vandaag", goal: "dagdoel", week: "coins deze week", best: "beste reeks",
       how_many: "Hoeveel vragen?", start: "Start", back: "Terug", again: "Nog eens", home: "Naar start",
       dont_know: "Weet ik niet", stop: "Stoppen", ok: "OK", type_answer: "typ je antwoord",
-      shop_hint: "Je wisselt coins in; papa of mama keurt het goed. Tot dan staat het op \"aangevraagd\".", my_requests: "Mijn aanvragen",
+      shop_hint: "Kies iets met je coins. Papa of mama keurt het goed.", my_requests: "Mijn aanvragen",
       parent_panel: "Ouderpaneel", pin_placeholder: "code", close: "Sluiten", next: "Verder",
       tab_kids: "Kinderen", tab_tasks: "Opdrachten", tab_rewards: "Beloningen", tab_lists: "Lijsten", tab_verbs: "Werkwoorden", tab_results: "Resultaten", tab_settings: "Instellingen",
       praise: ["Juist!", "Super!", "Goed zo!", "Knap!", "Helemaal juist!", "Top!"], retry: "Nog niet. Probeer nog eens.", it_is: "Het is:",
