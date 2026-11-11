@@ -659,16 +659,20 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
       const phoneOk = !!OK.backend.createPhotoSession && !touch;
       const inp = el("input"); inp.type = "file"; inp.accept = "image/*"; inp.multiple = true; inp.className = "hidden";
       inp.addEventListener("change", () => wzRead([...inp.files]));
-      const drop = el("button", "photo-drop", phoneOk
-        ? `${fileIco}<strong>Foto kiezen op deze computer</strong><span class="muted small">Een foto of scan die hier al staat</span>`
-        : `${camIco}<strong>Foto maken of kiezen</strong><span class="muted small">Meerdere bladzijden mag</span>`);
-      drop.type = "button"; drop.addEventListener("click", () => inp.click());
+      const tile = (ico, title, sub, onClick) => { const b = el("button", "photo-drop", `${ico}<strong>${title}</strong><span class="muted small">${sub}</span>`); b.type = "button"; b.addEventListener("click", onClick); return b; };
+      const two = el("div", "choice2");
       if (phoneOk) {
         /* aan een laptop: eerst de gsm (QR-code), daarnaast een bestand van de computer */
-        const cam = el("button", "photo-drop", `${camIco}<strong>Foto maken met je gsm</strong><span class="muted small">Scan een code, de woordjes komen hier</span>`);
-        cam.type = "button"; cam.addEventListener("click", () => wzGo("phone"));
-        const two = el("div", "choice2"); two.append(cam, drop); body.appendChild(two);
-      } else body.appendChild(drop);
+        two.append(tile(camIco, "Foto maken met je gsm", "Scan een code, de woordjes komen hier", () => wzGo("phone")),
+                   tile(fileIco, "Foto kiezen op deze computer", "Een foto of scan die hier al staat", () => inp.click()));
+      } else {
+        /* gsm of tablet: "capture" opent meteen de camera (zonder dat toont iOS eerst een keuzemenu); de bibliotheek apart, daar mag je meerdere kiezen */
+        const cam = el("input"); cam.type = "file"; cam.accept = "image/*"; cam.setAttribute("capture", "environment"); cam.className = "hidden";
+        cam.addEventListener("change", () => wzRead([...cam.files])); body.appendChild(cam);
+        two.append(tile(camIco, "Foto maken", "Eén bladzijde per keer", () => cam.click()),
+                   tile(fileIco, "Kiezen uit je foto's", "Meerdere bladzijden mag", () => inp.click()));
+      }
+      body.appendChild(two);
       body.appendChild(inp); body.appendChild(el("p", "small", "")).id = "wz-msg";
       const links = el("div", "stack wz-links");
       /* een voorbeeld dat bij het leerjaar past: een vreemde taal pas vanaf het vijfde, wereldoriëntatie vanaf het derde, voor de jongsten geen */
