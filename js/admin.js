@@ -12,8 +12,7 @@ const MOD = { tafels: "Tafels en delen", optellen: "Hoofdrekenen", cijferen: "Ci
   const HTML = `<section class="card stack"><div class="q-head"><h2>Kerncijfers</h2><span class="muted small" id="gen"></span></div><div class="stats" id="tiles"></div></section>
     <div class="grid2"><section class="card stack"><h3>Nieuwe gezinnen per week</h3><svg class="chart" id="c-fam"></svg></section>
     <section class="card stack"><h3>Oefenbeurten per dag (30 dagen)</h3><svg class="chart" id="c-sess"></svg><div class="legend"><span><i style="background:var(--blue)"></i>oefenen</span><span><i style="background:var(--mint)"></i>toets</span></div></section></div>
-    <div class="grid2"><section class="card stack"><h3>Kinderen per leerjaar</h3><div class="table-wrap" id="t-grade"></div></section>
-    <section class="card stack"><h3>Kinderen per stijl en wereld</h3><div class="table-wrap" id="t-style"></div></section></div>
+    <section class="card stack"><h3>Kinderen per leerjaar</h3><div class="table-wrap" id="t-grade"></div></section>
     <section class="card stack"><h3>Wat wordt er geoefend (laatste 30 dagen)</h3><p class="muted small">Beurten per vak, gemiddelde score en aantal kinderen. Grijs: vakken die aanstaan bij kinderen maar niet gebruikt werden.</p><div class="table-wrap" id="t-mod"></div></section>
     <section class="card stack"><h3>Inhoud en gezondheid</h3><div class="stats" id="tiles2"></div></section>`;
 
@@ -46,7 +45,6 @@ const MOD = { tafels: "Tafels en delen", optellen: "Hoofdrekenen", cijferen: "Ci
     const days = []; for (let i = 29; i >= 0; i--) { const dt = new Date(now); dt.setDate(dt.getDate() - i); const key = dt.toISOString().slice(0, 10); const f = (d.sessions_per_day || []).find(x => x.day === key); days.push({ label: `${dt.getDate()}/${dt.getMonth() + 1}`, practice: f ? f.practice : 0, test: f ? f.test : 0 }); }
     bars($("c-sess"), days, ["practice", "test"]);
     $("t-grade").innerHTML = table(["Leerjaar", "Kinderen"], (d.children_per_grade || []).map(x => ({ cells: [GRADE(x.grade), x.n] })), { barCol: 1 });
-    $("t-style").innerHTML = table(["Stijl", "Wereld", "Kinderen"], (d.children_per_style || []).map(x => ({ cells: [x.style === "kist" ? "Schatkist" : "Wereld", x.style === "kist" ? "" : (x.variant || "hondjes"), x.n] })), { barCol: 2 });
     const used = new Set((d.modules || []).map(m => m.module));
     const rows = (d.modules || []).map(m => ({ cells: [name(m.module), m.sessions, m.avg_pct + "%", m.children] }))
       .concat((d.modules_enabled || []).filter(m => !used.has(m.module)).map(m => ({ muted: true, cells: [name(m.module), 0, "", m.children] })));
