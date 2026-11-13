@@ -415,24 +415,29 @@ body[data-young="1"] .iconbtn{width:64px;height:64px}
 .iconbtn{width:44px;height:44px;display:grid;place-items:center;background:transparent;color:var(--fg2);border-radius:50%;flex:0 0 auto;padding:0}
 .iconbtn svg{width:26px;height:26px}
 .qcard{min-height:150px;justify-content:center}
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:15;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));border-radius:26px 26px 0 0;animation:sheetup .22s ease-out both}
-.sheet-in{max-width:928px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+/* feedback na een antwoord: op dezelfde plek en in dezelfde stijl als de gele "probeer nog eens"-balk, niet als los paneel onderaan */
+.sheet{padding:14px 16px;border-radius:12px;animation:sheetin .18s ease-out both;text-align:center}
+.sheet-in{display:flex;flex-direction:column;gap:10px;align-items:center}
 .sheet.ok{background:var(--mint-bg)}
 .sheet.bad{background:var(--rose-bg)}
-.sheet-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
-.sheet-head strong{font-family:var(--font-display);font-size:26px;font-weight:600}
+.sheet-head{display:flex;justify-content:center;align-items:center;gap:14px;flex-wrap:wrap}
+.sheet-head strong{font-family:var(--font-display);font-size:22px;font-weight:600}
 .sheet.ok .sheet-head strong{color:var(--mint-d)}
 .sheet.bad .sheet-head strong{color:var(--warn)}
-.sheet-pts{display:flex;align-items:center;gap:6px;background:#fff;border-radius:999px;padding:6px 14px 6px 10px;font-family:var(--font-display);font-size:18px}
+.sheet-pts{display:flex;align-items:center;gap:6px;background:#fff;border-radius:999px;padding:4px 12px 4px 8px;font-family:var(--font-display);font-size:17px}
 .sheet-body:empty{display:none}
-.sheet-label{font-size:15px}
-.sheet-answer{font-family:var(--font-display);font-weight:600;font-size:clamp(28px,7vw,40px);line-height:1.1}
-.sheet-explain{font-size:15px;margin-top:6px}
-.sheet .btn{width:100%}
+.sheet-body{font-size:17px;font-family:var(--font-display);color:var(--ink)}
+.sheet.ok .sheet-body{color:var(--mint-d)}
+.sheet.bad .sheet-body{color:var(--warn)}
+.sheet-label{font-size:15px;margin:0}
+.sheet-answer{font-family:var(--font-display);font-weight:600;font-size:clamp(26px,6vw,36px);line-height:1.1;margin:0}
+.sheet-explain{font-size:16px;margin-top:4px}
+.sheet .btn{min-width:min(100%,360px);margin-top:4px}
 .sheet.auto .btn{display:none}
 body[data-mode="kind"] .sheet.ok .btn{background:var(--mint);box-shadow:0 5px 0 var(--mint-d)}
-body[data-mode="kind"] .sheet.bad .btn{background:var(--rose);box-shadow:0 5px 0 var(--rose-d)}
-@keyframes sheetup{from{transform:translateY(100%)}to{transform:none}}
+.feedback{font-weight:600}
+.feedback:empty{display:none}
+@keyframes sheetin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 /* resultaat */
 #s-result .stats{grid-template-columns:1fr 1fr}
 #s-result .stat{text-align:center;padding:18px 12px;border:0}

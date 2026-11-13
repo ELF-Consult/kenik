@@ -339,6 +339,7 @@
     const sh = $("sheet"); sh.className = "sheet " + kind + (auto ? " auto" : ""); $("sheet-title").textContent = title; $("sheet-body").innerHTML = bodyHTML || "";
     const sp = $("sheet-pts"); sp.classList.toggle("hidden", !pts); if (pts) sp.innerHTML = `<span class="coin"></span>+${pts}`;
     sheetAt = Date.now(); clearTimeout(sheetTimer); const s0 = sess;
+    try { sh.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (e) { }
     if (auto) sheetTimer = setTimeout(() => { if (sess === s0) advance(); }, auto);
     else setTimeout(() => { if (sess === s0 && !sh.classList.contains("hidden")) $("btn-sheet").focus({ preventScroll: true }); }, 60);
   }
