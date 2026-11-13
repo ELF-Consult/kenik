@@ -224,7 +224,7 @@
         const det = document.createElement("details"); det.className = "modgroup lgroup"; det.open = true;
         const sum = document.createElement("summary"); sum.innerHTML = `<strong>${g.l}</strong> <span class="muted small" data-count></span>`; det.appendChild(sum);
         const ch = document.createElement("div"); ch.className = "chips verbchips"; det.appendChild(ch);
-        const add = v => { const c = chip("checkbox", f.key, v.inf, `${v.inf}&nbsp;<span class="muted">${v.nl || ""}</span>`, sel.has(v.inf)); c.dataset.inf = v.inf;
+        const add = v => { const c = chip("checkbox", f.key, v.inf, v.inf, sel.has(v.inf)); c.dataset.inf = v.inf; if (v.nl) c.title = v.nl; /* betekenis enkel bij aanwijzen */
           const after = [...ch.children].find(x => x.dataset.inf.localeCompare(v.inf, "fr") > 0); ch.insertBefore(c, after || null); return c; }; /* alfabetisch, ook wat je later toevoegt */
         verbs.forEach(add);
         const upd = () => { sum.querySelector("[data-count]").textContent = `${ch.querySelectorAll("input:checked").length} van ${ch.querySelectorAll("input").length} aan`; }; ch.addEventListener("change", upd); upd();
