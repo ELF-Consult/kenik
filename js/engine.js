@@ -141,7 +141,8 @@
     s.skip = function () { const q = s.current(); if (!q || s.locked) return; { const st = OK.stat(child.id, q.key); st.wrong++; st.lastOk = false; } child.streak = 0; s.locked = true; s.results.push({ q, ok: false, given: "" }); OK.save(); };
     s.next = () => { s.i++; return s.i < s.qs.length; };
     s.finish = function () {
-      const n = s.results.length, ok = s.results.filter(r => r.ok).length, pct = n ? Math.round(ok / n * 100) : 0;
+      /* "juist" = meteen juist; wat pas bij de tweede poging lukte, telt niet mee (en staat op het eindscherm bij "nog eens bekijken") */
+      const n = s.results.length, ok = s.results.filter(r => r.ok && !r.tries).length, pct = n ? Math.round(ok / n * 100) : 0;
       let bonus = 0, taskDone = false, progress = null;
       if (s.mode === "test" && n >= 5) { bonus = pct >= 90 ? 80 : pct >= 75 ? 40 : pct >= 50 ? 15 : 0; if (bonus) OK.addPoints(child.id, bonus, "toets"); }
       if (s.taskId && n >= s.qs.length) {

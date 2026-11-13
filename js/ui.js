@@ -387,7 +387,7 @@
     const list = $("result-list"); list.innerHTML = "";
     if (p && !r.taskDone) list.appendChild(h("p", null, `Nog ${p.total - p.known} te gaan. Die komen de volgende keer terug.`));
     if (r.wrong.length) list.appendChild(h("p", "muted small", "Nog eens bekijken:"));
-    r.wrong.forEach(x => { const d = h("div", "item"); const q = x.q; d.appendChild(h("span", null, (q.prompt.main || q.prompt.meta || "").replace(/<[^>]+>/g, ""))); d.appendChild(h("strong", null, OK.display(q))); list.appendChild(d); });
+    r.wrong.forEach(x => { const d = h("div", "item"); const q = x.q; const left = h("span"); left.appendChild(h("span", null, (q.prompt.main || q.prompt.meta || "").replace(/<[^>]+>/g, ""))); left.appendChild(h("span", "muted small", x.ok ? "  (pas de tweede keer juist)" : x.given ? `  (jij zei ${x.given})` : "  (overgeslagen)")); d.appendChild(left); d.appendChild(h("strong", null, OK.display(q))); list.appendChild(d); });
     renderGoal($("result-goal"), c);
     OK.show("s-result");
     if (r.taskDone || (mode !== "test" && r.n >= 5 && r.pct === 100)) confetti();
