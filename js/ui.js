@@ -233,14 +233,14 @@
       OK.verbGroups().forEach(g => groupBox(g, OK.verbsInGroup(g.v).filter(v => OK.verbIsCore(v.inf) || sel.has(v.inf)).concat(OK.customVerbs().filter(v => OK.verbGroupOf(v.inf) === g.v && sel.has(v.inf))).sort(abc)));
       /* zelf een werkwoord toevoegen: uit de catalogus of regelmatig (automatisch vervoegd); onregelmatig onbekend -> met de zes vormen op de werkwoordenpagina */
       const addRow = document.createElement("div"); addRow.className = "row";
-      addRow.innerHTML = `<input type="text" data-add-inf placeholder="Werkwoord toevoegen, bv. donner" style="max-width:260px"><input type="text" data-add-nl placeholder="betekenis (mag leeg)" style="max-width:200px"><button class="pill-btn" type="button" data-add-verb>Toevoegen</button><span class="muted small" data-add-msg></span>`;
+      addRow.innerHTML = `<input type="text" data-add-inf placeholder="Werkwoord toevoegen, bv. donner" style="max-width:260px"><button class="pill-btn" type="button" data-add-verb>Toevoegen</button><span class="muted small" data-add-msg></span>`;
       addRow.querySelector("[data-add-verb]").addEventListener("click", () => {
-        const inf = addRow.querySelector("[data-add-inf]").value.trim().toLowerCase(), nl = addRow.querySelector("[data-add-nl]").value.trim(), msg = addRow.querySelector("[data-add-msg]"); if (!inf) return;
+        const inf = addRow.querySelector("[data-add-inf]").value.trim().toLowerCase(), nl = "", msg = addRow.querySelector("[data-add-msg]"); if (!inf) return;
         let v = OK.verbDef ? OK.verbDef(inf) : null;
         if (!v) { const forms = OK.addVerb(inf, nl, null); if (!forms) { msg.textContent = "Dat ken ik niet en het is geen regelmatig -er/-ir/-re werkwoord. Voeg het met de zes vormen toe onder Leerstof › Werkwoorden."; return; } v = OK.verbDef(inf); }
         const g = OK.verbGroupOf(inf), gb = boxes[g]; const ex = gb.ch.querySelector(`[data-inf="${inf}"] input`);
         if (ex) ex.checked = true; else gb.add(v).querySelector("input").checked = true;
-        gb.upd(); msg.textContent = `${inf} staat bij "${(OK.verbGroups().find(x => x.v === g) || {}).l}".`; addRow.querySelector("[data-add-inf]").value = ""; addRow.querySelector("[data-add-nl]").value = "";
+        gb.upd(); msg.textContent = `${inf} staat bij "${(OK.verbGroups().find(x => x.v === g) || {}).l}".`; addRow.querySelector("[data-add-inf]").value = "";
         gb.ch.dispatchEvent(new Event("change", { bubbles: true }));
       });
       addRow.querySelector("[data-add-inf]").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); addRow.querySelector("[data-add-verb]").click(); } });
