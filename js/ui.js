@@ -62,12 +62,14 @@
   OK.dueText = dueText;
   function startTask(t) { startSession({ moduleId: t.module, config: t.config, mode: t.mode, count: t.count, taskId: t.id }); }
   /* opdrachten die de voorbije week afgewerkt zijn: daar hoort een proeftoets bij (zonder hulp, met score en extra coins) */
-  function recentDone(c) { const since = Date.now() - 7 * 864e5; return S().tasks.filter(t => t.status === "done" && t.doneAt && new Date(t.doneAt) > since && (t.doneBy === c.id || t.child === c.id) && OK.modules[t.module] && !t.tested).sort((a, b) => b.doneAt.localeCompare(a.doneAt)); }
+  /* enkel opdrachten die (bijna) foutloos afgewerkt zijn: score "9/10" of beter */
+  function scorePct(t) { const m = /^(\d+)\/(\d+)$/.exec(t.score || ""); return m && +m[2] ? +m[1] / +m[2] * 100 : (t.score ? 0 : 100); }
+  function recentDone(c) { const since = Date.now() - 7 * 864e5; return S().tasks.filter(t => t.status === "done" && t.doneAt && new Date(t.doneAt) > since && (t.doneBy === c.id || t.child === c.id) && OK.modules[t.module] && !t.tested && scorePct(t) >= 90).sort((a, b) => b.doneAt.localeCompare(a.doneAt)); }
   function startProef(t) { t.tested = true; OK.save(); startSession({ moduleId: t.module, config: t.config, mode: "test", count: t.count, taskId: null }); }
   function renderProef(c) {
     const box = $("proef-card"); if (!box) return; box.innerHTML = ""; const done = recentDone(c).slice(0, 3); box.classList.toggle("hidden", !done.length); if (!done.length) return;
     box.appendChild(h("h3", null, "Proeftoets"));
-    box.appendChild(h("p", "muted small", "Je kent het al. Durf je het zonder hulp? Bij 90% of meer krijg je 80 coins extra."));
+    box.appendChild(h("p", "muted small", "Dit ging goed. Durf je het ook zonder hulp en zonder tweede kans? Bij 90% of meer krijg je 80 coins extra."));
     done.forEach(t => { const d = h("div", "item"); d.appendChild(h("strong", null, OK.taskTitle(t))); const b = h("button", "btn", "Proeftoets"); b.type = "button"; b.addEventListener("click", () => startProef(t)); d.appendChild(b); box.appendChild(d); });
   }
   let pmode = "now";
@@ -96,7 +98,7 @@
   /* bovenaan: de eerste opdracht, met één grote knop */
   function renderHero(c, t) {
     const box = $("todo-hero"); box.innerHTML = "";
-    if (!t) { box.className = "hero-task empty"; box.appendChild(h("h1", null, `Dag ${c.name}`)); box.appendChild(h("p", null, "Er staat niets klaar. Kies hieronder zelf wat je oefent.")); return; }
+    if (!t) { box.className = "hero-task empty"; box.appendChild(h("h1", null, `Dag ${c.name}`)); box.appendChild(h("p", null, recentDone(c).length ? "Geen nieuwe opdracht. Kies zelf wat je oefent, of waag je aan de proeftoets." : "Er staat niets klaar. Kies hieronder zelf wat je oefent.")); return; }
     box.className = "hero-task";
     const p = OK.taskProgress(t, c.id), m = OK.modules[t.module];
     const due = dueText(t); if (due) box.appendChild(h("span", "hero-due", due));
