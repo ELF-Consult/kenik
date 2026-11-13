@@ -451,7 +451,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     if (!showFr && !showEn && !showNl) { root.appendChild(el("div", "card stack", `<p class="muted small">Geen enkel kind heeft nu een werkwoordenoefening aan (Franse of Engelse werkwoorden, Nederlandse grammatica of spelling). Zet die aan onder Kinderen, dan verschijnt de voorraad hier.</p>`)); return; }
     /* Frans */
     if (showFr) {
-    const fr = langCard(root, "#3b6fd6", "Frans", "Vink per kind aan welke werkwoorden Kenik afvraagt. Vet = komt in de meeste handboeken van het 5e en 6e voor. Werkwoorden uit een gefotografeerde lijst komen er vanzelf bij. De tijden kies je onder Kinderen.");
+    const fr = langCard(root, "#3b6fd6", "Frans", "Vink per kind aan welke werkwoorden Kenik afvraagt. Bij een nieuw kind staan de gangbare uit het 5e en 6e al aan. Werkwoorden uit een gefotografeerde lijst komen er vanzelf bij. De tijden kies je onder Kinderen.");
     const F = OK.frans; const frKids = kids.filter(k => k.modules["frans-werkwoorden"]);
     if (!frKids.length) fr.appendChild(el("p", "muted small", "Geen enkel kind heeft Franse werkwoorden aan. Zet dat aan onder Kinderen."));
     else {

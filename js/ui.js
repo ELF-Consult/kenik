@@ -221,13 +221,14 @@
       const groupBox = (title, verbs) => {
         const det = document.createElement("details"); det.className = "modgroup lgroup"; const n0 = verbs.filter(v => sel.has(v.inf)).length; det.open = n0 > 0;
         const sum = document.createElement("summary"); sum.innerHTML = `<strong>${title}</strong> <span class="muted small" data-count></span>`; det.appendChild(sum);
-        const ch = document.createElement("div"); ch.className = "chips verbchips"; verbs.forEach(v => { const c = chip("checkbox", f.key, v.inf, `${v.inf}&nbsp;<span class="muted">${v.nl || ""}</span>`, sel.has(v.inf)); if (OK.verbIsCore(v.inf)) c.classList.add("core"); ch.appendChild(c); }); det.appendChild(ch);
+        const ch = document.createElement("div"); ch.className = "chips verbchips"; verbs.forEach(v => { const c = chip("checkbox", f.key, v.inf, `${v.inf}&nbsp;<span class="muted">${v.nl || ""}</span>`, sel.has(v.inf)); ch.appendChild(c); }); det.appendChild(ch);
         const upd = () => { sum.querySelector("[data-count]").textContent = `${ch.querySelectorAll("input:checked").length} van ${verbs.length} aan`; }; ch.addEventListener("change", upd); upd();
         box.appendChild(det);
       };
-      OK.verbGroups().forEach(g => groupBox(g.l, OK.verbsInGroup(g.v)));
-      const own = OK.customVerbs(); if (own.length) groupBox("Eigen werkwoorden", own);
-      const hint = document.createElement("p"); hint.className = "muted small"; hint.textContent = "Vet = komt in de meeste handboeken van het 5e en 6e voor. Werkwoorden uit een gefotografeerde lijst komen er vanzelf bij."; wrap.appendChild(hint);
+      const abc = (a, b) => a.inf.localeCompare(b.inf, "fr"); /* alfabetisch, geen verborgen volgorde */
+      OK.verbGroups().forEach(g => groupBox(g.l, OK.verbsInGroup(g.v).slice().sort(abc)));
+      const own = OK.customVerbs().slice().sort(abc); if (own.length) groupBox("Eigen werkwoorden", own);
+      const hint = document.createElement("p"); hint.className = "muted small"; hint.textContent = "Werkwoorden uit een gefotografeerde lijst komen er vanzelf bij."; wrap.appendChild(hint);
     } else if (f.type === "verbs") {
       const sel = Array.isArray(value) ? value : []; const all = OK.allVerbs(); const shown = restrict && sel.length ? all.filter(v => sel.includes(v.inf)) : all; box = container(false);
       shown.forEach(v => box.appendChild(chip("checkbox", f.key, v.inf, v.inf, restrict ? false : sel.includes(v.inf))));
