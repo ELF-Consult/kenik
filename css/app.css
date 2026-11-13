@@ -484,3 +484,16 @@ table.review .x{background:transparent;color:var(--fg2);font-size:18px;min-width
 .verbchips .chip>input:checked+span{background:var(--blue-bg);border-color:var(--link);color:var(--link);transform:none}
 .verbchips .chip>input:checked+span .muted{color:var(--link);opacity:.75}
 .verbchips .chip>input:checked+span::before{content:"✓";font-weight:700;margin-right:4px}
+
+/* knop naar de kindkant: de kinderen zelf als stapeltje avatars, plus een pijl */
+.kidswitch{display:inline-flex;align-items:center;gap:10px;padding:6px 14px 6px 6px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--fg);font-family:var(--font-display);font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.04);transition:border-color .15s,transform .15s}
+.kidswitch:hover{border-color:var(--link);transform:translateY(-1px)}
+.kidswitch:hover svg{transform:translateX(2px)}
+.kidswitch svg{color:var(--link);transition:transform .15s}
+.kidswitch-avs{display:flex}
+.kidswitch-avs .avatar{width:32px;height:32px;font-size:14px;border:2px solid var(--card);margin-left:-10px}
+.kidswitch-avs .avatar:first-child{margin-left:0}
+/* + tegel bij "Wie ben jij?" (enkel als een ouder ingelogd is) */
+.player-add{border-style:dashed;background:transparent}
+.avatar.add{background:transparent;border:2px dashed var(--link);color:var(--link);font-size:26px;font-weight:700}
+.player-add strong{color:var(--link)}

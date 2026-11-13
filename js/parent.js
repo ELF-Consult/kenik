@@ -24,7 +24,9 @@
     subs.forEach(t => { const b = el("button", "tab", SUBLABEL[t]); b.type = "button"; b.dataset.tab = t; b.addEventListener("click", () => showTab(t)); ps.appendChild(b); });
     showTab(tab || subs[0]);
   }
-  OK.openParent = function (main, tab) { OK.show("s-parent"); showMain(main || "home", tab); };
+  OK.openParent = function (main, tab) { OK.show("s-parent"); showMain(main || "home", tab); paintKidSwitch(); };
+  /* de knop naar de kindkant toont de kinderen zelf (max 3 avatars) */
+  function paintKidSwitch() { const b = $("kidswitch-avs"); if (!b) return; b.innerHTML = S().children.slice(0, 3).map(c => OK.avatarHTML(c)).join(""); $("btn-parent-exit").classList.toggle("hidden", !S().children.length); }
   /* Beheer: knop in de kop, enkel voor beheerders */
   let adminKnown = null;
   OK.refreshAdminButton = async function () {
@@ -597,6 +599,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
   const localISO = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const wzHead = (title, sub) => el("div", "stack wz-head", `<h1>${esc(title)}</h1>${sub ? `<p class="muted">${esc(sub)}</p>` : ""}`);
   const wzMsg = t => { const m = $("wz-msg"); if (m) m.textContent = t; };
+  OK.openWizardNewKid = function () { wz = { child: null, step: null, hist: [], items: [], verbs: [], name: "", subject: "Frans", listId: null, taskId: null }; OK.show("s-wizard"); wzGo("kid"); };
   OK.openWizard = function (childId, opts) {
     const kids = S().children; opts = opts || {};
     wz = { child: childId || (kids.length === 1 ? kids[0].id : null), step: null, hist: [], items: [], verbs: [], name: "", subject: "Frans", listId: null, taskId: null };

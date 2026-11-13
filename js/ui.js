@@ -46,6 +46,12 @@
       b.addEventListener("click", () => { S().current = c.id; OK.save(); renderHome(); });
       box.appendChild(b);
     });
+    /* ouder ingelogd op dit toestel: een + om meteen een kind toe te voegen (opent de wizard "nieuw kind") */
+    if (OK.session() && OK.session().type === "parent") {
+      const add = document.createElement("button"); add.type = "button"; add.className = "player player-add"; add.title = "Kind toevoegen";
+      add.innerHTML = `<div class="avatar add">+</div><strong>Kind toevoegen</strong><span class="muted small">Naam en leerjaar, meer niet</span>`;
+      add.addEventListener("click", () => { OK.show("s-parent"); OK.openWizardNewKid(); }); box.appendChild(add);
+    }
     $("who-hint").classList.toggle("hidden", S().children.length > 0);
     OK.show("s-who");
   }
