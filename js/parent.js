@@ -451,12 +451,12 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     if (!showFr && !showEn && !showNl) { root.appendChild(el("div", "card stack", `<p class="muted small">Geen enkel kind heeft nu een werkwoordenoefening aan (Franse of Engelse werkwoorden, Nederlandse grammatica of spelling). Zet die aan onder Kinderen, dan verschijnt de voorraad hier.</p>`)); return; }
     /* Frans */
     if (showFr) {
-    const fr = langCard(root, "#3b6fd6", "Frans", "Per kind kies je onder Kinderen welke soorten werkwoorden en welke tijden. Dit is wat er in elke soort zit. Werkwoorden uit een gefotografeerde lijst doen automatisch mee voor dat kind.");
+    const fr = langCard(root, "#3b6fd6", "Frans", "Per kind kies je onder Kinderen welke soorten werkwoorden, of enkel de basis (vet) of alles, en welke tijden. Werkwoorden uit een gefotografeerde lijst doen automatisch mee voor dat kind.");
     const F = OK.frans;
     OK.verbGroups().forEach(g => {
-      const vs = OK.verbsInGroup(g.v); const det = el("details", "modgroup");
-      det.innerHTML = `<summary><strong>${esc(g.l)}</strong> <span class="muted small">${vs.length} werkwoorden</span></summary>`;
-      const ch = el("div", "chips"); vs.forEach(v => ch.appendChild(el("span", "tag", `${esc(v.inf)} <span class="muted">${esc(v.nl || "")}</span>`))); det.appendChild(ch); fr.appendChild(det);
+      const vs = OK.verbsInGroup(g.v).slice().sort((a, b) => (OK.verbIsCore(b.inf) ? 1 : 0) - (OK.verbIsCore(a.inf) ? 1 : 0)); const core = vs.filter(v => OK.verbIsCore(v.inf)).length; const det = el("details", "modgroup");
+      det.innerHTML = `<summary><strong>${esc(g.l)}</strong> <span class="muted small">${core} basis, ${vs.length - core} uitbreiding</span></summary>`;
+      const ch = el("div", "chips"); vs.forEach(v => ch.appendChild(el("span", "tag" + (OK.verbIsCore(v.inf) ? " core" : ""), `${esc(v.inf)} <span class="muted">${esc(v.nl || "")}</span>`))); det.appendChild(ch); fr.appendChild(det);
     });
     const own = (S().verbs || []); if (own.length) {
       fr.appendChild(el("strong", "small", "Eigen werkwoorden en werkwoorden uit het handboek"));

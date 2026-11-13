@@ -85,12 +85,20 @@
     if (inf.endsWith("er")) return /[gc]er$/.test(inf) ? "er-sp" : "er";
     return inf.endsWith("ir") ? "ir" : inf.endsWith("re") ? "re" : "irr";
   };
+  /* de basis per soort: wat in de meeste handboeken van het 5e en 6e leerjaar voorkomt; de rest is uitbreiding */
+  const CORE = new Set(["être", "avoir", "aller", "faire", "pouvoir", "vouloir", "devoir", "savoir", "prendre", "venir", "dire", "lire", "écrire", "voir",
+    "chercher", "regarder", "écouter", "jouer", "parler", "habiter", "aimer", "travailler", "chanter", "donner", "arriver", "rester", "trouver", "demander", "porter", "aider", "fermer", "compter",
+    "manger", "commencer", "acheter", "appeler", "payer", "préférer", "nager",
+    "finir", "choisir", "réussir", "grandir",
+    "attendre", "répondre", "vendre", "entendre", "perdre"]);
+  OK.verbIsCore = inf => CORE.has(inf);
   OK.verbGroups = () => GROUPS;
   OK.verbsInGroup = g => BUILTIN.filter(b => OK.verbGroupOf(b.inf) === g);
   /* de werkwoorden waarmee een kind oefent: de gekozen groepen + wat uit het handboek kwam (cfg.verbs) */
   OK.verbsFor = function (cfg) {
     cfg = cfg || {}; const groups = new Set(cfg.groups || []); const extra = new Set(cfg.verbs || []); const out = [], seen = new Set();
-    BUILTIN.forEach(b => { if ((groups.has(OK.verbGroupOf(b.inf)) || extra.has(b.inf)) && !seen.has(b.inf)) { seen.add(b.inf); out.push(defOf(b.inf) || b); } });
+    const coreOnly = cfg.scope !== "all";
+    BUILTIN.forEach(b => { if ((groups.has(OK.verbGroupOf(b.inf)) && (!coreOnly || CORE.has(b.inf)) || extra.has(b.inf)) && !seen.has(b.inf)) { seen.add(b.inf); out.push(defOf(b.inf) || b); } });
     (OK.state().verbs || []).forEach(v => { if (!seen.has(v.inf) && (extra.has(v.inf) || groups.has(OK.verbGroupOf(v.inf)))) { seen.add(v.inf); out.push(v); } });
     return out;
   };
@@ -105,10 +113,11 @@
   OK.registerModule({
     id: "frans-werkwoorden", order: 11, name: "Franse werkwoorden", group: "Talen en kennis", generator: false,
     schema: [{ key: "groups", label: "Welke soorten werkwoorden", type: "multi", kid: true, options: GROUPS.map(g => ({ v: g.v, l: g.l, sub: g.ex })) },
+      { key: "scope", label: "Hoeveel werkwoorden per soort", type: "select", options: [{ v: "core", l: "Enkel de basis (de bekendste, zoals in het handboek van het 5e en 6e)" }, { v: "all", l: "Alles (ook minder gebruikte werkwoorden)" }] },
       { key: "tenses", label: "Welke tijden", type: "multi", kid: true, options: [{ v: "present", l: "Présent" }, { v: "pc", l: "Passé composé" }, { v: "imparfait", l: "Imparfait" }, { v: "fp", l: "Futur proche (aller + infinitif)" }, { v: "inf", l: "Infinitief geven bij een vervoegde vorm" }] }],
     defaultsFor: (g, region) => (region && region.firstForeign !== "fr") ? (g >= 7 ? { groups: ["irr", "er"], tenses: ["present", "inf"] } : null)
-      : g >= 7 ? { groups: ["irr", "er", "er-sp", "ir", "re"], tenses: ["present", "pc", "fp", "inf"] } : g >= 6 ? { groups: ["irr", "er", "er-sp"], tenses: ["present", "inf"] } : g >= 5 ? { groups: ["irr", "er"], tenses: ["present"] } : null,
-    describe: cfg => { const gs = (cfg.groups || []).map(g => (GROUPS.find(x => x.v === g) || {}).l).filter(Boolean); const ex = (cfg.verbs || []).length; return (gs.length ? gs.join(", ").toLowerCase() : "") + (ex ? (gs.length ? " + " : "") + ex + " uit het handboek" : "") + " · " + (cfg.tenses || ["present"]).filter(t => t !== "inf").map(t => TENSE_NAME[t]).join(", "); },
+      : g >= 7 ? { groups: ["irr", "er", "er-sp", "ir", "re"], scope: "all", tenses: ["present", "pc", "fp", "inf"] } : g >= 6 ? { groups: ["irr", "er", "er-sp"], scope: "core", tenses: ["present", "inf"] } : g >= 5 ? { groups: ["irr", "er"], scope: "core", tenses: ["present"] } : null,
+    describe: cfg => { const gs = (cfg.groups || []).map(g => (GROUPS.find(x => x.v === g) || {}).l).filter(Boolean); const ex = (cfg.verbs || []).length; const n = OK.verbsFor(cfg).length; return (gs.length ? gs.join(", ").toLowerCase() : "") + (ex ? (gs.length ? " + " : "") + ex + " uit het handboek" : "") + (n ? ` (${n} werkwoorden${cfg.scope === "all" ? "" : ", basis"})` : "") + " · " + (cfg.tenses || ["present"]).filter(t => t !== "inf").map(t => TENSE_NAME[t]).join(", "); },
     pool(cfg) {
       const pool = []; const tenses = cfg.tenses && cfg.tenses.length ? cfg.tenses : ["present"];
       OK.verbsFor(cfg).forEach(v => {
