@@ -216,19 +216,36 @@
       listPicker(box, shown, f.key, l => `${l.items.length} woorden`, l => restrict ? false : sel.includes(l.id));
       if (!restrict) { const a = document.createElement("label"); a.className = "check"; a.innerHTML = `<input type="checkbox" data-all="1" ${value === "all" || !value ? "checked" : ""}><span>Alle woordpakketten voor dit kind, ook latere</span>`; box.appendChild(a); }
     } else if (f.type === "verbpick") {
-      /* per soort de werkwoorden aanvinken; "basis" (vet) en "alles" vullen snel, daarna pas je per werkwoord aan */
+      /* per soort enkel de gangbare werkwoorden (5e en 6e) plus wat er voor dit kind bij kwam (handboek of zelf toegevoegd);
+         de rest van de catalogus blijft onzichtbaar tot je ze toevoegt, dan komen ze vanzelf in de juiste soort */
       const sel = new Set(Array.isArray(value) ? value : []); box = container(true); box.className = "stack";
-      const groupBox = (title, verbs) => {
-        const det = document.createElement("details"); det.className = "modgroup lgroup"; const n0 = verbs.filter(v => sel.has(v.inf)).length; det.open = n0 > 0;
-        const sum = document.createElement("summary"); sum.innerHTML = `<strong>${title}</strong> <span class="muted small" data-count></span>`; det.appendChild(sum);
-        const ch = document.createElement("div"); ch.className = "chips verbchips"; verbs.forEach(v => { const c = chip("checkbox", f.key, v.inf, `${v.inf}&nbsp;<span class="muted">${v.nl || ""}</span>`, sel.has(v.inf)); ch.appendChild(c); }); det.appendChild(ch);
-        const upd = () => { sum.querySelector("[data-count]").textContent = `${ch.querySelectorAll("input:checked").length} van ${verbs.length} aan`; }; ch.addEventListener("change", upd); upd();
-        box.appendChild(det);
+      const abc = (a, b) => a.inf.localeCompare(b.inf, "fr"); const boxes = {};
+      const groupBox = (g, verbs) => {
+        const det = document.createElement("details"); det.className = "modgroup lgroup"; det.open = true;
+        const sum = document.createElement("summary"); sum.innerHTML = `<strong>${g.l}</strong> <span class="muted small" data-count></span>`; det.appendChild(sum);
+        const ch = document.createElement("div"); ch.className = "chips verbchips"; det.appendChild(ch);
+        const add = v => { const c = chip("checkbox", f.key, v.inf, `${v.inf}&nbsp;<span class="muted">${v.nl || ""}</span>`, sel.has(v.inf)); c.dataset.inf = v.inf;
+          const after = [...ch.children].find(x => x.dataset.inf.localeCompare(v.inf, "fr") > 0); ch.insertBefore(c, after || null); return c; }; /* alfabetisch, ook wat je later toevoegt */
+        verbs.forEach(add);
+        const upd = () => { sum.querySelector("[data-count]").textContent = `${ch.querySelectorAll("input:checked").length} van ${ch.querySelectorAll("input").length} aan`; }; ch.addEventListener("change", upd); upd();
+        box.appendChild(det); boxes[g.v] = { ch, add, upd };
       };
-      const abc = (a, b) => a.inf.localeCompare(b.inf, "fr"); /* alfabetisch, geen verborgen volgorde */
-      OK.verbGroups().forEach(g => groupBox(g.l, OK.verbsInGroup(g.v).slice().sort(abc)));
-      const own = OK.customVerbs().slice().sort(abc); if (own.length) groupBox("Eigen werkwoorden", own);
-      const hint = document.createElement("p"); hint.className = "muted small"; hint.textContent = "Werkwoorden uit een gefotografeerde lijst komen er vanzelf bij."; wrap.appendChild(hint);
+      OK.verbGroups().forEach(g => groupBox(g, OK.verbsInGroup(g.v).filter(v => OK.verbIsCore(v.inf) || sel.has(v.inf)).concat(OK.customVerbs().filter(v => OK.verbGroupOf(v.inf) === g.v && sel.has(v.inf))).sort(abc)));
+      /* zelf een werkwoord toevoegen: uit de catalogus of regelmatig (automatisch vervoegd); onregelmatig onbekend -> met de zes vormen op de werkwoordenpagina */
+      const addRow = document.createElement("div"); addRow.className = "row";
+      addRow.innerHTML = `<input type="text" data-add-inf placeholder="Werkwoord toevoegen, bv. donner" style="max-width:260px"><input type="text" data-add-nl placeholder="betekenis (mag leeg)" style="max-width:200px"><button class="pill-btn" type="button" data-add-verb>Toevoegen</button><span class="muted small" data-add-msg></span>`;
+      addRow.querySelector("[data-add-verb]").addEventListener("click", () => {
+        const inf = addRow.querySelector("[data-add-inf]").value.trim().toLowerCase(), nl = addRow.querySelector("[data-add-nl]").value.trim(), msg = addRow.querySelector("[data-add-msg]"); if (!inf) return;
+        let v = OK.verbDef ? OK.verbDef(inf) : null;
+        if (!v) { const forms = OK.addVerb(inf, nl, null); if (!forms) { msg.textContent = "Dat ken ik niet en het is geen regelmatig -er/-ir/-re werkwoord. Voeg het met de zes vormen toe onder Leerstof › Werkwoorden."; return; } v = OK.verbDef(inf); }
+        const g = OK.verbGroupOf(inf), gb = boxes[g]; const ex = gb.ch.querySelector(`[data-inf="${inf}"] input`);
+        if (ex) ex.checked = true; else gb.add(v).querySelector("input").checked = true;
+        gb.upd(); msg.textContent = `${inf} staat bij "${(OK.verbGroups().find(x => x.v === g) || {}).l}".`; addRow.querySelector("[data-add-inf]").value = ""; addRow.querySelector("[data-add-nl]").value = "";
+        gb.ch.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      addRow.querySelector("[data-add-inf]").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); addRow.querySelector("[data-add-verb]").click(); } });
+      wrap.appendChild(addRow);
+      const hint = document.createElement("p"); hint.className = "muted small"; hint.textContent = "Werkwoorden uit een gefotografeerde lijst komen er vanzelf bij, in de juiste soort."; wrap.appendChild(hint);
     } else if (f.type === "verbs") {
       const sel = Array.isArray(value) ? value : []; const all = OK.allVerbs(); const shown = restrict && sel.length ? all.filter(v => sel.includes(v.inf)) : all; box = container(false);
       shown.forEach(v => box.appendChild(chip("checkbox", f.key, v.inf, v.inf, restrict ? false : sel.includes(v.inf))));

@@ -103,6 +103,7 @@
   /* snelle vulling: de basis (of alles) van een paar soorten */
   OK.verbsPreset = (groups, scope) => BUILTIN.filter(b => groups.includes(OK.verbGroupOf(b.inf)) && (scope === "all" || CORE.has(b.inf))).map(b => b.inf);
   OK.customVerbs = () => (OK.state().verbs || []).filter(v => !BUILTIN.some(b => b.inf === v.inf));
+  OK.verbDef = inf => defOf(inf) || null;
   /* uitleg bij een addertje in de présent */
   function spNote(v, i) {
     const inf = v.inf, f = v.forms;
