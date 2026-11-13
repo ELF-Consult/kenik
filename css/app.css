@@ -296,6 +296,8 @@ table.review th.hidden{display:none}
 .lrow{display:flex;align-items:center;gap:12px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .lrow-main{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
 .lrow-main strong{overflow-wrap:anywhere}
+.lrow-main.clickable{cursor:pointer}
+.lrow-main.clickable:hover strong{color:var(--link);text-decoration:underline}
 .lrow-main .tag{margin-right:4px}
 .lrow-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
 .lrow-actions select{width:auto;min-width:120px;height:40px;padding:6px 32px 6px 10px}

@@ -319,6 +319,7 @@
     S().lists.slice().reverse().forEach(l => {
       const d = el("div", "lrow");
       d.innerHTML = `<div class="lrow-main"><strong>${esc(l.name)}</strong><span class="muted small">${l.pack ? `<span class="tag">woordpakket</span>` : `<span class="tag">${esc(l.subject || "")}</span>`} ${l.items.length} ${l.pack ? "woorden" : "paren"}${l.example ? ` <span class="tag">voorbeeld</span>` : ""}</span></div>`;
+      const main = d.querySelector(".lrow-main"); main.classList.add("clickable"); main.title = "Bekijken en aanpassen"; main.addEventListener("click", () => OK.openListEdit(l.id));
       const r = el("div", "lrow-actions");
       const who = el("select"); who.title = "Voor wie"; who.innerHTML = `<option value="all">Iedereen</option>${kids.map(k => `<option value="${k.id}" ${Array.isArray(l.children) && l.children[0] === k.id ? "selected" : ""}>${esc(k.name)}</option>`).join("")}`; who.addEventListener("change", () => { l.children = who.value === "all" ? "all" : [who.value]; OK.save(); });
       const x = el("button", "x", "✕"); x.type = "button"; x.title = "Lijst verwijderen"; x.addEventListener("click", () => { if (x.dataset.armed) { S().lists = S().lists.filter(q => q !== l); OK.save(); renderLists(); } else { x.dataset.armed = "1"; x.textContent = "Zeker?"; setTimeout(() => { delete x.dataset.armed; x.textContent = "✕"; }, 2500); } });
@@ -596,9 +597,15 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     $("wz-back").textContent = wz.hist.length ? "Terug" : "Sluiten"; $("wz-back").classList.toggle("hidden", step === "done");
     const body = $("wz-body"); body.innerHTML = ""; WZ[step](body); window.scrollTo(0, 0);
   }
-  $("wz-back").addEventListener("click", () => { if (!wz) return; if (photoCtl) photoCtl.abort(); stopPhone(); if (wz.hist.length) wzGo(wz.hist.pop(), true); else { wz = null; OK.openParent(); } });
+  $("wz-back").addEventListener("click", () => { if (!wz) return; if (photoCtl) photoCtl.abort(); stopPhone(); if (wz.hist.length) wzGo(wz.hist.pop(), true); else { const wasEdit = wz.edit; wz = null; if (wasEdit) OK.openParent("stof", "lists"); else OK.openParent(); } });
   const wzChild = () => OK.childById(wz.child);
   const wzList = () => S().lists.find(l => l.id === wz.listId);
+  /* bestaande lijst bekijken of aanpassen: dezelfde nakijktabel als na een foto; opslaan brengt je terug naar de lijsten */
+  OK.openListEdit = function (listId) {
+    const l = S().lists.find(x => x.id === listId); if (!l) return; const kids = S().children;
+    wz = { child: Array.isArray(l.children) && l.children[0] && kids.some(k => k.id === l.children[0]) ? l.children[0] : (kids[0] ? kids[0].id : null), step: null, hist: [], items: l.items.map(it => ({ q: it[0], a: it[1] })), verbs: [], name: l.name, subject: l.pack ? "__pack" : (l.subject || "Frans"), listId: l.id, taskId: null, edit: true };
+    OK.show("s-wizard"); wzGo("review");
+  };
 
   async function wzRead(files) {
     const fn = await sampleAvailable(); if (!fn || !wz) return;
@@ -748,7 +755,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     /* nakijken: Kenik stelt naam en vak voor, twijfelgevallen zijn gemarkeerd */
     review(body) {
       const pack = wz.subject === "__pack", foreign = !pack && OK.langFor(wz.subject) !== "nl";
-      body.appendChild(wzHead("Klopt dit?", `${wz.items.length} ${pack || foreign ? "woorden" : "paren"} gevonden. Verbeter wat fout gelezen is.`));
+      body.appendChild(wz.edit ? wzHead(esc(wz.name), `${wz.items.length} ${pack || foreign ? "woorden" : "paren"}. Pas aan wat je wil en sla op.`) : wzHead("Klopt dit?", `${wz.items.length} ${pack || foreign ? "woorden" : "paren"} gevonden. Verbeter wat fout gelezen is.`));
       body.appendChild(el("div", "row", `<label class="f">Naam<input type="text" id="wz-lname" value="${esc(wz.name)}" placeholder="bv. Unité 4: à l'école"></label><label class="f" style="max-width:220px">Vak<select id="wz-subject">${OK.SUBJECTS.map(x => `<option ${x === wz.subject ? "selected" : ""}>${x}</option>`).join("")}<option value="__pack" ${pack ? "selected" : ""}>Spelling (woordpakket)</option></select></label>`));
       const tw = el("div", "table-wrap", `<table class="review"><thead><tr><th>${pack ? "Woord" : foreign ? "Nederlands" : "Vraag"}</th>${pack ? "" : `<th>${foreign ? esc(wz.subject) : "Antwoord"}</th>`}<th></th></tr></thead><tbody></tbody></table>`); body.appendChild(tw);
       const tb = tw.querySelector("tbody");
@@ -762,16 +769,18 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
       const addr = el("button", "pill-btn", "+ regel"); addr.type = "button"; addr.addEventListener("click", () => { read(); wz.items.push({ q: "", a: "" }); draw(); const rows = tb.querySelectorAll("tr"); rows[rows.length - 1].querySelector("input").focus(); }); body.appendChild(el("div", "row")).appendChild(addr);
       $("wz-subject").addEventListener("change", () => { read(); wz.subject = $("wz-subject").value; wzGo("review", true); });
       body.appendChild(el("p", "small", "")).id = "wz-msg";
-      const save = el("button", "btn big wide", "Klopt, opslaan"); save.type = "button"; body.appendChild(save);
+      const save = el("button", "btn big wide", wz.edit ? "Opslaan" : "Klopt, opslaan"); save.type = "button"; body.appendChild(save);
       save.addEventListener("click", () => {
         read(); const name = wz.name.trim();
         const items = wz.items.map(x => pack ? [x.q.trim().toLowerCase(), x.q.trim().toLowerCase()] : [x.q.trim(), x.a.trim()]).filter(x => x[0] && x[1]);
         if (!name) { wzMsg("Geef de lijst eerst een naam."); $("wz-lname").focus(); return; }
         if (!items.length) { wzMsg("Er staat niets om op te slaan."); return; }
         const subject = pack ? "Nederlands" : wz.subject; const data = { name, subject, lang: OK.langFor(subject), children: [wz.child], items, pack };
-        let l = wzList(); if (l && !l.example) Object.assign(l, data); else { l = Object.assign({ id: OK.uid(), created: OK.nowISO() }, data); S().lists.push(l); wz.listId = l.id; }
+        let l = wzList(); if (l && (!l.example || wz.edit)) Object.assign(l, data); else { l = Object.assign({ id: OK.uid(), created: OK.nowISO() }, data); S().lists.push(l); wz.listId = l.id; }
         wz.verbs.forEach(v => { if ((v.lang || "fr") !== "fr") return; OK.addVerb(String(v.inf), String(v.nl || ""), Array.isArray(v.forms) && v.forms.length === 6 ? v.forms.map(String) : null); }); wz.verbs = [];
-        OK.save(); S().children.forEach(c => OK.syncVerbsFromLists(c)); wzGo("when");
+        OK.save(); S().children.forEach(c => OK.syncVerbsFromLists(c));
+        if (wz.edit) { wz = null; OK.openParent("stof", "lists"); return; }
+        wzGo("when");
       });
     },
     /* één vraag die de opdracht aanmaakt */
