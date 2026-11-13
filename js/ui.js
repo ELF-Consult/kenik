@@ -399,7 +399,8 @@
     r.wrong.forEach(x => { const d = h("div", "item"); const q = x.q; const left = h("span"); left.appendChild(h("span", null, (q.prompt.main || q.prompt.meta || "").replace(/<[^>]+>/g, ""))); left.appendChild(h("span", "muted small", x.ok ? "  (pas de tweede keer juist)" : x.given ? `  (jij zei ${x.given})` : "  (overgeslagen)")); d.appendChild(left); d.appendChild(h("strong", null, OK.display(q))); list.appendChild(d); });
     renderGoal($("result-goal"), c);
     /* grote knop: de volgende opdracht als er nog een klaarstaat, anders terug naar het startscherm */
-    const nxt = openTasks(c)[0]; const nb = $("btn-result-next"); nb.textContent = nxt ? "Volgende: " + OK.taskTitle(nxt) : "Klaar"; nb.onclick = () => nxt ? startTask(nxt) : renderHome();
+    const nxt = openTasks(c).find(t => t.id !== (lastOpts && lastOpts.taskId)); const nb = $("btn-result-next"); nb.textContent = nxt ? "Volgende: " + OK.taskTitle(nxt) : "Klaar"; nb.onclick = () => nxt ? startTask(nxt) : renderHome();
+    $("btn-again").textContent = p && !r.taskDone ? `Nog een beurt (nog ${p.total - p.known} te gaan)` : "Nog een beurt";
     OK.show("s-result");
     if (r.taskDone || (mode !== "test" && r.n >= 5 && r.pct === 100)) confetti();
   }
