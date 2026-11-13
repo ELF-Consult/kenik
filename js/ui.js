@@ -387,9 +387,14 @@
     hideSheet();
     const c = OK.child(); const r = sess.finish(); const mode = sess.mode; sess = null; const p = r.progress;
     $("result-title").textContent = mode === "test" ? `Toets: ${r.ok} op ${r.n} (${r.pct}%)` : r.taskDone ? (p ? "Je kent ze allemaal!" : "Opdracht klaar!") : "Klaar!";
-    $("result-stats").innerHTML = (p ? `<div class="stat good"><b>${p.known} van ${p.total}</b><span>gekend</span></div>` : `<div class="stat good"><b>${r.ok} van ${r.n}</b><span>juist</span></div>`) + `<div class="stat coin-stat"><b>+${r.total}</b><span>coins verdiend</span></div>`;
+    /* eerste tegel = deze beurt; de stand van de hele lijst komt apart eronder, anders lijken de getallen niet te kloppen (15 vragen, lijst van 19) */
+    $("result-stats").innerHTML = `<div class="stat good"><b>${r.ok} van ${r.n}</b><span>meteen juist</span></div><div class="stat coin-stat"><b>+${r.total}</b><span>coins verdiend</span></div>`;
     const list = $("result-list"); list.innerHTML = "";
-    if (p && !r.taskDone) list.appendChild(h("p", null, `Nog ${p.total - p.known} te gaan. Die komen de volgende keer terug.`));
+    if (p) {
+      const left = p.total - p.known, notAsked = Math.max(0, left - r.wrong.length);
+      const parts = []; if (r.wrong.length) parts.push(`${r.wrong.length} ${r.wrong.length === 1 ? "woord dat" : "woorden die"} niet meteen ${r.wrong.length === 1 ? "lukte" : "lukten"}`); if (notAsked) parts.push(`${notAsked} ${notAsked === 1 ? "woord dat" : "woorden die"} nog niet aan bod ${notAsked === 1 ? "kwam" : "kwamen"}`);
+      list.appendChild(h("p", null, r.taskDone ? `De hele lijst van ${p.total} is gekend.` : `De lijst: ${p.known} van ${p.total} gekend. Nog ${left} te gaan${parts.length ? " (" + parts.join(" en ") + ")" : ""}. Die komen de volgende keer terug.`));
+    }
     if (r.wrong.length) list.appendChild(h("p", "muted small", "Nog eens bekijken:"));
     r.wrong.forEach(x => { const d = h("div", "item"); const q = x.q; const left = h("span"); left.appendChild(h("span", null, (q.prompt.main || q.prompt.meta || "").replace(/<[^>]+>/g, ""))); left.appendChild(h("span", "muted small", x.ok ? "  (pas de tweede keer juist)" : x.given ? `  (jij zei ${x.given})` : "  (overgeslagen)")); d.appendChild(left); d.appendChild(h("strong", null, OK.display(q))); list.appendChild(d); });
     renderGoal($("result-goal"), c);
