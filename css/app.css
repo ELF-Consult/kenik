@@ -81,6 +81,12 @@ label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--fg
 .modbtns{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
 .modbtn{background:var(--card2);border:1px solid var(--line);color:var(--fg);border-radius:14px;padding:14px;text-align:left;display:flex;flex-direction:column;gap:4px;font-family:var(--font-body)}
 .modbtn strong{font-family:var(--font-display);font-size:16px}
+.modtile{display:flex;flex-direction:column;background:var(--card2);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.modtile .modbtn{flex:1;background:transparent;border:0;border-radius:0}
+.modpick{align-self:flex-start;margin:0 14px 12px;background:transparent;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--muted);font-family:var(--font-body)}
+.modpick:hover{color:var(--fg);border-color:var(--fg)}
+body[data-mode="kind"] .modtile{padding:0}
+body[data-mode="kind"] .modtile .modbtn{background:transparent;border:0;box-shadow:none;border-radius:0;padding:16px}
 .modbtn:hover{border-color:var(--blue)}
 /* spelen */
 .q-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
@@ -375,7 +381,7 @@ body[data-mode="kind"] .btn:active{transform:translateY(3px);box-shadow:0 2px 0 
 body[data-mode="kind"] .btn.mint{box-shadow:0 5px 0 var(--mint-d)}
 body[data-mode="kind"] .btn.ghost{box-shadow:0 4px 0 var(--edge);border:2px solid var(--line)}
 body[data-mode="kind"] .btn.big{font-size:22px;min-height:64px}
-body[data-mode="kind"] .modbtn,body[data-mode="kind"] .player{background:#fff;border:2px solid var(--line);box-shadow:0 4px 0 var(--edge);border-radius:18px;padding:16px}
+body[data-mode="kind"] .modtile,body[data-mode="kind"] .player{background:#fff;border:2px solid var(--line);box-shadow:0 4px 0 var(--edge);border-radius:18px;padding:16px}
 body[data-mode="kind"] .key{background:#fff;border:2px solid var(--line);box-shadow:0 4px 0 var(--edge)}
 body[data-mode="kind"] .key.ok{background:var(--mint);border:0;box-shadow:0 4px 0 var(--mint-d)}
 body[data-mode="kind"] .q{font-size:clamp(34px,8vw,56px)}

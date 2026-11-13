@@ -72,8 +72,6 @@
     box.appendChild(h("p", "muted small", "Dit ging goed. Durf je het ook zonder hulp en zonder tweede kans? Bij 90% of meer krijg je 80 coins extra."));
     done.forEach(t => { const d = h("div", "item"); d.appendChild(h("strong", null, OK.taskTitle(t))); const b = h("button", "btn", "Proeftoets"); b.type = "button"; b.addEventListener("click", () => startProef(t)); d.appendChild(b); box.appendChild(d); });
   }
-  let pmode = "now";
-  document.querySelectorAll("#practice-modes input").forEach(i => i.addEventListener("change", () => { if (i.checked) pmode = i.value; }));
   function renderHome() {
     const c = OK.child(); if (!c) { renderWho(); return; }
     if (OK.syncVerbsFromLists) OK.syncVerbsFromLists(c);
@@ -86,8 +84,12 @@
     if (!mods.length) pb.innerHTML = `<p class="muted small">Er staat nog niets aan. Papa of mama kiest in het ouderpaneel wat je oefent.</p>`;
     mods.forEach(m => {
       const desc = m.describe ? m.describe(c.modules[m.id], { child: c }) : "";
+      /* klik op de tegel = meteen starten met de instellingen van papa of mama; het kleine knopje erop laat het kind zelf kiezen (enkel als er iets te kiezen valt) */
+      const wrap = h("div", "modtile");
       const b = h("button", "modbtn"); b.type = "button"; b.innerHTML = `<strong>${m.name}</strong><span class="muted small">${desc}</span>`;
-      b.addEventListener("click", () => pmode === "now" ? startNow(m.id, "practice") : startSetup(m.id, pmode === "test" ? "test" : "practice")); pb.appendChild(b);
+      b.addEventListener("click", () => startNow(m.id, "practice")); wrap.appendChild(b);
+      if ((m.schema || []).some(f => f.kid)) { const k = h("button", "modpick", "Zelf kiezen"); k.type = "button"; k.title = "Kies zelf wat je oefent"; k.addEventListener("click", e => { e.stopPropagation(); startSetup(m.id, "practice"); }); wrap.appendChild(k); }
+      pb.appendChild(wrap);
     });
     $("practice-card").open = !tasks.length;
     $("practice-title").textContent = tasks.length ? "Iets anders oefenen" : "Kies wat je oefent";
