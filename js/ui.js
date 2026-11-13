@@ -265,6 +265,14 @@
     renderInput(q);
     if (q.speak) setTimeout(() => OK.speak(q.speak), 150);
   }
+  /* tijdens een beurt: cijfers, Backspace en Enter werken altijd, ook als het antwoordvak de focus kwijt is */
+  document.addEventListener("keydown", e => {
+    const a = $("answer"); if (!a || !sess || document.activeElement === a || !$("s-play") || $("s-play").classList.contains("hidden")) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === "Enter") { e.preventDefault(); if (sess.locked) { if (Date.now() - sheetAt > 250) advance(); } else check(); }
+    else if (e.key === "Backspace") { e.preventDefault(); a.value = a.value.slice(0, -1); }
+    else if (e.key.length === 1 && a.value.length < 40) { e.preventDefault(); a.value += e.key; a.focus(); }
+  });
   $("question").addEventListener("click", e => { const b = e.target.closest("[data-speak]"); if (b) OK.speak(b.dataset.speak); });
   function renderInput(q) {
     const area = $("input-area"); area.innerHTML = "";
@@ -284,11 +292,14 @@
         const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"].concat(row4).concat(row4.includes("del") || row4.includes("del2") ? ["ok3"] : ["del", "ok"]);
         keys.forEach(k => { if (k === "del2") { const sp = document.createElement("span"); kp.appendChild(sp); return; } const b = document.createElement("button"); b.type = "button"; const isOk = k === "ok" || k === "ok3"; b.className = "key" + (isOk ? " ok" : k === "del" ? " del" : ""); if (k === "ok3") b.style.gridColumn = "span 3"; b.textContent = isOk ? "OK" : k === "del" ? "wis" : k; b.dataset.k = isOk ? "ok" : k; kp.appendChild(b); });
         kp.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; const a = $("answer"); if (b.dataset.k === "ok") check(); else if (b.dataset.k === "del") a.value = a.value.slice(0, -1); else if (a.value.length < 10) a.value += b.dataset.k; });
+        kp.addEventListener("mousedown", e => e.preventDefault()); /* klik op een toets haalt de focus niet uit het vak: typen blijft werken */
         area.appendChild(kp); row.querySelector("#btn-check").classList.add("hidden");
+        /* op een aanraakscherm geen schermtoetsenbord (het klavier staat er al), maar een echt toetsenbord werkt wel */
+        if ("ontouchstart" in window) row.querySelector("#answer").setAttribute("inputmode", "none");
       }
       $("btn-check").addEventListener("click", () => check());
-      $("answer").addEventListener("keydown", e => { if (e.key === "Enter") check(); });
-      if (!pad) setTimeout(() => { const a = $("answer"); if (a) a.focus(); }, 50);
+      $("answer").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); check(); } });
+      setTimeout(() => { const a = $("answer"); if (a) a.focus(); }, 50);
     } else if (q.kind === "choice") {
       const box = document.createElement("div"); box.className = "choices";
       q.choices.forEach(ch => { const b = document.createElement("button"); b.type = "button"; b.className = "choice"; b.textContent = ch; b.addEventListener("click", () => { if (sess.locked) return; const res = check(ch); if (res && res.status === "ok") b.classList.add("right"); else { b.classList.add("wrong"); if (res && res.status === "reveal") box.querySelectorAll(".choice").forEach(x => { if (x.textContent === q.answer) x.classList.add("right"); }); } }); box.appendChild(b); });
@@ -346,7 +357,8 @@
       const pts = (res.pts || 0) + (res.goalBonus || 0);
       $("coin-count").textContent = OK.child().points;
       const a = $("answer"); if (a) a.disabled = true;
-      showSheet(res.r.exact ? "ok" : "ok note", res.r.exact ? OK.pick(OK.t("praise")) : "Juist, maar let op", body, pts, body ? 0 : 900);
+      /* juist: vanzelf verder, zonder klik. Met uitleg of opmerking iets langer in beeld; enkel bij een fout blijft "Verder" staan */
+      showSheet(res.r.exact ? "ok" : "ok note", res.r.exact ? OK.pick(OK.t("praise")) : "Juist, maar let op", body, pts, body ? 2000 : 900);
     } else if (res.status === "retry") {
       fb.className = "feedback bad"; fb.textContent = OK.t("retry");
       const a = $("answer"); if (a) { a.value = ""; a.focus(); }
