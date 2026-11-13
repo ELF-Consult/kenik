@@ -451,12 +451,17 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     if (!showFr && !showEn && !showNl) { root.appendChild(el("div", "card stack", `<p class="muted small">Geen enkel kind heeft nu een werkwoordenoefening aan (Franse of Engelse werkwoorden, Nederlandse grammatica of spelling). Zet die aan onder Kinderen, dan verschijnt de voorraad hier.</p>`)); return; }
     /* Frans */
     if (showFr) {
-    const fr = langCard(root, "#3b6fd6", "Frans", "De voorraad van jullie gezin. Begin klein en neem werkwoorden uit de lijst erbij als ze op school aan bod komen. Welke een kind oefent en in welke tijden, kies je per kind onder Kinderen.");
+    const fr = langCard(root, "#3b6fd6", "Frans", "Per kind kies je onder Kinderen welke soorten werkwoorden en welke tijden. Dit is wat er in elke soort zit. Werkwoorden uit een gefotografeerde lijst doen automatisch mee voor dat kind.");
     const F = OK.frans;
-    const frStock = el("div", "chips"); OK.allVerbs().forEach(v => { const t = el("span", "tag stock", `${esc(v.inf)} <span class="muted">${esc(v.nl || "")}</span>`); const x = el("button", "x", "✕"); x.type = "button"; x.title = "Uit de voorraad halen"; x.addEventListener("click", () => { OK.unstockVerb(v.inf); renderVerbs(); }); t.appendChild(x); frStock.appendChild(t); });
-    if (!OK.allVerbs().length) frStock.appendChild(el("span", "muted small", "Nog geen werkwoorden in de voorraad."));
-    fr.appendChild(el("strong", "small", "In de voorraad")); fr.appendChild(frStock);
-    const frCat = OK.verbCatalogue(); if (frCat.length) { fr.appendChild(el("strong", "small", "Nog toe te voegen uit de lijst (klik om bij te nemen)")); const c = el("div", "chips"); frCat.forEach(v => { const b = el("button", "tag add", `+ ${esc(v.inf)} <span class="muted">${esc(v.nl)}</span>`); b.type = "button"; b.addEventListener("click", () => { OK.stockVerb(v.inf); renderVerbs(); }); c.appendChild(b); }); fr.appendChild(c); }
+    OK.verbGroups().forEach(g => {
+      const vs = OK.verbsInGroup(g.v); const det = el("details", "modgroup");
+      det.innerHTML = `<summary><strong>${esc(g.l)}</strong> <span class="muted small">${vs.length} werkwoorden</span></summary>`;
+      const ch = el("div", "chips"); vs.forEach(v => ch.appendChild(el("span", "tag", `${esc(v.inf)} <span class="muted">${esc(v.nl || "")}</span>`))); det.appendChild(ch); fr.appendChild(det);
+    });
+    const own = (S().verbs || []); if (own.length) {
+      fr.appendChild(el("strong", "small", "Eigen werkwoorden en werkwoorden uit het handboek"));
+      const ch = el("div", "chips"); own.forEach(v => { const t = el("span", "tag stock", `${esc(v.inf)} <span class="muted">${esc(v.nl || "")}</span>`); const x = el("button", "x", "✕"); x.type = "button"; x.title = "Verwijderen"; x.addEventListener("click", () => { OK.unstockVerb(v.inf); renderVerbs(); }); t.appendChild(x); ch.appendChild(t); }); fr.appendChild(ch);
+    }
     fr.appendChild(el("div", "stack", `<strong class="small">Eigen werkwoord (staat niet in de lijst)</strong><div class="row"><label class="f">Infinitief<input type="text" id="v-inf" placeholder="bv. donner"></label><label class="f">Nederlands (mag leeg)<input type="text" id="v-nl" placeholder="geven"></label><label class="f">Soort<select id="v-type"><option value="auto">regelmatig (automatisch vervoegen)</option><option value="irr">onregelmatig (zelf invullen)</option></select></label></div>
       <div class="row hidden" id="v-forms">${F.PRON.map((p, i) => `<label class="f">${p}<input type="text" id="vf${i}"></label>`).join("")}</div><div class="row"><button class="btn" id="btn-add-verb" type="button">Werkwoord opslaan</button><span class="muted small" id="v-msg"></span></div>`));
     $("v-type").addEventListener("change", () => $("v-forms").classList.toggle("hidden", $("v-type").value !== "irr"));

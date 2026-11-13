@@ -70,19 +70,52 @@
   };
   const DEFAULT_ON = { 5: ["être", "avoir", "aller", "faire", "chercher", "manger", "regarder", "jouer", "parler", "habiter", "aimer", "écouter"], 6: ["être", "avoir", "aller", "faire", "pouvoir", "vouloir", "comprendre", "courir", "chercher", "manger", "regarder", "jouer", "parler", "habiter", "aimer", "finir", "attendre"] };
 
+  /* Groepen: zo kiest een ouder (en het kind) per soort, niet per werkwoord. "er-sp" = -er met een addertje in de stam of spelling
+     (manger -> mangeons, commencer -> commençons, acheter -> achète, appeler -> appelle, payer -> paie, préférer -> préfère). */
+  const GROUPS = [
+    { v: "irr", l: "Onregelmatig", ex: "être, avoir, aller, faire, pouvoir, vouloir, venir, prendre, ..." },
+    { v: "er", l: "-er (regelmatig)", ex: "parler, jouer, habiter, regarder, ..." },
+    { v: "er-sp", l: "-er met een addertje", ex: "manger, commencer, acheter, appeler, payer, préférer, ..." },
+    { v: "ir", l: "-ir (regelmatig)", ex: "finir, choisir, réussir, ..." },
+    { v: "re", l: "-re (regelmatig)", ex: "attendre, répondre, vendre, ..." }
+  ];
+  OK.verbGroupOf = function (inf) {
+    if (inf === "aller") return "irr"; /* het enige echte onregelmatige -er werkwoord */
+    if (IRR[inf]) return inf.endsWith("er") ? "er-sp" : "irr";
+    if (inf.endsWith("er")) return /[gc]er$/.test(inf) ? "er-sp" : "er";
+    return inf.endsWith("ir") ? "ir" : inf.endsWith("re") ? "re" : "irr";
+  };
+  OK.verbGroups = () => GROUPS;
+  OK.verbsInGroup = g => BUILTIN.filter(b => OK.verbGroupOf(b.inf) === g);
+  /* de werkwoorden waarmee een kind oefent: de gekozen groepen + wat uit het handboek kwam (cfg.verbs) */
+  OK.verbsFor = function (cfg) {
+    cfg = cfg || {}; const groups = new Set(cfg.groups || []); const extra = new Set(cfg.verbs || []); const out = [], seen = new Set();
+    BUILTIN.forEach(b => { if ((groups.has(OK.verbGroupOf(b.inf)) || extra.has(b.inf)) && !seen.has(b.inf)) { seen.add(b.inf); out.push(defOf(b.inf) || b); } });
+    (OK.state().verbs || []).forEach(v => { if (!seen.has(v.inf) && (extra.has(v.inf) || groups.has(OK.verbGroupOf(v.inf)))) { seen.add(v.inf); out.push(v); } });
+    return out;
+  };
+  /* uitleg bij een addertje in de présent */
+  function spNote(v, i) {
+    const inf = v.inf, f = v.forms;
+    if (/ger$/.test(inf) && i === 3) return `-ger: nous ${f[3]}. De e blijft staan, anders klinkt de g hard.`;
+    if (/cer$/.test(inf) && i === 3) return `-cer: nous ${f[3]}. De ç houdt de c zacht.`;
+    if (IRR[inf] && inf.endsWith("er")) return (i === 3 || i === 4) ? `nous ${f[3]}, vous ${f[4]}: hier blijft de stam zoals in de infinitief.` : `${inf}: in je, tu, il en ils verandert de stam (${f[0]}, ${f[5]}); in nous en vous niet (${f[3]}, ${f[4]}).`;
+    return null;
+  }
   OK.registerModule({
     id: "frans-werkwoorden", order: 11, name: "Franse werkwoorden", group: "Talen en kennis", generator: false,
-    schema: [{ key: "verbs", label: "Welke werkwoorden", type: "verbs", kid: true },
+    schema: [{ key: "groups", label: "Welke soorten werkwoorden", type: "multi", kid: true, options: GROUPS.map(g => ({ v: g.v, l: g.l, sub: g.ex })) },
       { key: "tenses", label: "Welke tijden", type: "multi", kid: true, options: [{ v: "present", l: "Présent" }, { v: "pc", l: "Passé composé" }, { v: "imparfait", l: "Imparfait" }, { v: "fp", l: "Futur proche (aller + infinitif)" }, { v: "inf", l: "Infinitief geven bij een vervoegde vorm" }] }],
-    defaultsFor: (g, region) => { const st = stock(); const pickV = list => list.filter(v => st.includes(v)); return (region && region.firstForeign !== "fr") ? (g >= 7 ? { verbs: pickV(DEFAULT_ON[6]), tenses: ["present", "inf"] } : null) : (g >= 7 ? { verbs: pickV(DEFAULT_ON[6]), tenses: ["present", "pc", "fp", "inf"] } : g >= 5 ? { verbs: pickV(DEFAULT_ON[Math.min(6, g)] || DEFAULT_ON[6]), tenses: ["present"] } : null); },
-    describe: cfg => (cfg.verbs || []).length + " werkwoorden · " + (cfg.tenses || ["present"]).filter(t => t !== "inf").map(t => TENSE_NAME[t]).join(", "),
+    defaultsFor: (g, region) => (region && region.firstForeign !== "fr") ? (g >= 7 ? { groups: ["irr", "er"], tenses: ["present", "inf"] } : null)
+      : g >= 7 ? { groups: ["irr", "er", "er-sp", "ir", "re"], tenses: ["present", "pc", "fp", "inf"] } : g >= 6 ? { groups: ["irr", "er", "er-sp"], tenses: ["present", "inf"] } : g >= 5 ? { groups: ["irr", "er"], tenses: ["present"] } : null,
+    describe: cfg => { const gs = (cfg.groups || []).map(g => (GROUPS.find(x => x.v === g) || {}).l).filter(Boolean); const ex = (cfg.verbs || []).length; return (gs.length ? gs.join(", ").toLowerCase() : "") + (ex ? (gs.length ? " + " : "") + ex + " uit het handboek" : "") + " · " + (cfg.tenses || ["present"]).filter(t => t !== "inf").map(t => TENSE_NAME[t]).join(", "); },
     pool(cfg) {
-      const sel = new Set(cfg.verbs || []); const pool = []; const tenses = cfg.tenses && cfg.tenses.length ? cfg.tenses : ["present"];
-      OK.allVerbs().filter(v => sel.has(v.inf)).forEach(v => {
+      const pool = []; const tenses = cfg.tenses && cfg.tenses.length ? cfg.tenses : ["present"];
+      OK.verbsFor(cfg).forEach(v => {
         for (let i = 0; i < 6; i++) {
           const subj = SUBJ[i][0];
           const item = (tense, ans, meta) => ({ key: `v|${v.inf}|${i}|${tense}`, module: "frans-werkwoorden", kind: "text", lang: "fr", prompt: { meta: `${v.inf}${v.nl ? " · " + v.nl : ""} · ${meta}`, main: `<span class="pron">${/^j'/.test(ans) ? "" : elide(subj, ans)}</span> ____` }, answer: ans, stripPron: true, display: a => (/^j'/.test(a) ? "" : elide(subj, a) + " ") + a });
-          if (tenses.includes("present")) pool.push(Object.assign(item("present", v.forms[i], "présent"), { key: `v|${v.inf}|${i}` }));
+          if (tenses.includes("present")) { const note = spNote(v, i); pool.push(Object.assign(item("present", v.forms[i], "présent"), { key: `v|${v.inf}|${i}` }, note ? { explain: note } : {})); }
           if (tenses.includes("pc")) pool.push(Object.assign(item("pc", passeCompose(v, i), "passé composé"), { explain: `${ETRE.includes(v.inf) ? "Met être (en het participe past zich aan)" : "Met avoir"}: ${elide(subj, passeCompose(v, i))} ${passeCompose(v, i)}`.replace("j' j'", "j'") }));
           if (tenses.includes("imparfait")) pool.push(Object.assign(item("imparfait", imparfait(v, i), "imparfait"), { explain: `Stam van de nous-vorm (${v.forms[3]}) + uitgang: ${imparfait(v, i)}` }));
           if (tenses.includes("fp")) pool.push(Object.assign(item("fp", futurProche(v, i), "futur proche"), { explain: `aller in de présent + infinitief: ${futurProche(v, i)}` }));

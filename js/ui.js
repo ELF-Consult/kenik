@@ -197,9 +197,9 @@
     if (f.type === "multi") {
       let opts = f.options; const sel = Array.isArray(value) ? value : [];
       if (restrict && child && child.modules && sel.length) opts = opts.filter(o => sel.map(String).includes(String(o.v)));
-      const asRows = opts.some(o => String(o.l).length > 16); box = container(asRows);
+      const asRows = opts.some(o => String(o.l).length > 16 || o.sub); box = container(asRows);
       /* in het instelscherm van het kind begint alles leeg: aanvinken wat je nu wil oefenen (of "Alles") */
-      opts.forEach(o => { const on = restrict ? false : sel.map(String).includes(String(o.v)); box.appendChild(asRows ? row("checkbox", f.key, o.v, o.l, "", on) : chip("checkbox", f.key, o.v, o.l, on)); });
+      opts.forEach(o => { const on = restrict ? false : sel.map(String).includes(String(o.v)); box.appendChild(asRows ? row("checkbox", f.key, o.v, o.l, o.sub || "", on) : chip("checkbox", f.key, o.v, o.l, on)); });
     } else if (f.type === "select") {
       const group = f.key + "-" + OK.uid(); const asRows = f.options.some(o => String(o.l).length > 16); box = container(asRows);
       f.options.forEach(o => { const on = String(value == null ? f.default : value) === String(o.v); box.appendChild(asRows ? row("radio", group, o.v, o.l, "", on) : chip("radio", group, o.v, o.l, on)); });
