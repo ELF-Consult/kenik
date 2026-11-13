@@ -46,7 +46,7 @@ window.OK = window.OK || {};
 
   function migrate(s) {
     /* Franse werkwoorden: van losse werkwoorden per kind naar soorten (groepen). De oude keuze bepaalt welke soorten aan gaan. */
-    (s.children || []).forEach(c => { const m = c.modules && c.modules["frans-werkwoorden"]; if (m && !m.groups && Array.isArray(m.verbs) && OK.verbGroupOf) { m.groups = [...new Set(m.verbs.map(OK.verbGroupOf))]; m.verbs = m.verbs.filter(v => (s.verbs || []).some(x => x.inf === v)); } });
+    (s.children || []).forEach(c => { const m = c.modules && c.modules["frans-werkwoorden"]; if (m && OK.normalizeVerbCfg) { if (!m.groups && !m.picked && Array.isArray(m.verbs)) m.picked = true; OK.normalizeVerbCfg(m); } });
     const f = fresh();
     Object.keys(f).forEach(k => { if (s[k] === undefined) s[k] = f[k]; });
     Object.keys(f.settings).forEach(k => { if (s.settings[k] === undefined) s.settings[k] = f.settings[k]; });

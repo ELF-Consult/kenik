@@ -185,9 +185,9 @@
         const head = el("label", "modhead", `<input type="checkbox" class="switch" data-on="1" ${on ? "checked" : ""}><span class="modname">${m.name}</span><span class="muted small modsub">${on ? "aan" : "uit"}</span>`); box.appendChild(head);
         const fields = el("div", "stack" + (on ? "" : " hidden")); fields.dataset.fields = "1";
         const effective = cfg || (m.defaultsFor && m.defaultsFor(c.grade, OK.region())) || {};
-        (m.schema || []).forEach(f => fields.appendChild(OK.fieldEditor(f, effective[f.key], c, false)));
+        (m.schema || []).filter(f => f.parent !== false).forEach(f => fields.appendChild(OK.fieldEditor(f, effective[f.key], c, false)));
         const ex = el("div", "example"); fields.appendChild(ex);
-        const refresh = () => { const cfg = {}; (m.schema || []).forEach(f => { const v = OK.readField(f, fields); if (v !== undefined) cfg[f.key] = v; }); const t = OK.exampleText(c, m.id, cfg); ex.innerHTML = t ? `<span class="muted small">Voorbeeld</span> <span>${esc(t)}</span> <button class="linklike small" type="button" data-again>nog een</button>` : ""; };
+        const refresh = () => { const cfg = {}; (m.schema || []).forEach(f => { const v = OK.readField(f, fields); if (v !== undefined) cfg[f.key] = v; }); if (m.normalize) m.normalize(cfg); const t = OK.exampleText(c, m.id, cfg); ex.innerHTML = t ? `<span class="muted small">Voorbeeld</span> <span>${esc(t)}</span> <button class="linklike small" type="button" data-again>nog een</button>` : ""; };
         fields.addEventListener("change", refresh); fields.addEventListener("click", e => { if (e.target.closest("[data-again]")) refresh(); }); refresh();
         box.appendChild(fields);
         head.querySelector("input").addEventListener("change", e => { fields.classList.toggle("hidden", !e.target.checked); box.classList.toggle("off", !e.target.checked); head.querySelector(".modsub").textContent = e.target.checked ? "aan" : "uit"; });
@@ -202,7 +202,7 @@
     save.addEventListener("click", () => {
       c.name = $("e-name").value.trim() || c.name; c.grade = +$("e-grade").value; c.avatar = avatar || undefined;
       const mods = {};
-      modRoot.querySelectorAll(".modcfg").forEach(box => { const m = OK.modules[box.dataset.mod]; if (!box.querySelector("[data-on]").checked) return; const cfg = {}; (m.schema || []).forEach(f => { const v = OK.readField(f, box); if (v !== undefined) cfg[f.key] = v; }); mods[m.id] = cfg; });
+      modRoot.querySelectorAll(".modcfg").forEach(box => { const m = OK.modules[box.dataset.mod]; if (!box.querySelector("[data-on]").checked) return; const cfg = {}; (m.schema || []).forEach(f => { const v = OK.readField(f, box); if (v !== undefined) cfg[f.key] = v; }); if (m.normalize) m.normalize(cfg); mods[m.id] = cfg; });
       c.modules = mods; OK.save(); msg.textContent = "Opgeslagen."; setTimeout(() => { editing = null; renderKids(); }, 400);
     });
     cancel.addEventListener("click", () => { editing = null; renderKids(); });
@@ -451,7 +451,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     if (!showFr && !showEn && !showNl) { root.appendChild(el("div", "card stack", `<p class="muted small">Geen enkel kind heeft nu een werkwoordenoefening aan (Franse of Engelse werkwoorden, Nederlandse grammatica of spelling). Zet die aan onder Kinderen, dan verschijnt de voorraad hier.</p>`)); return; }
     /* Frans */
     if (showFr) {
-    const fr = langCard(root, "#3b6fd6", "Frans", "Per kind kies je onder Kinderen welke soorten werkwoorden, of enkel de basis (vet) of alles, en welke tijden. Werkwoorden uit een gefotografeerde lijst doen automatisch mee voor dat kind.");
+    const fr = langCard(root, "#3b6fd6", "Frans", "Per kind vink je onder Kinderen aan welke werkwoorden en welke tijden; per soort vul je snel met de basis (vet) of alles, en dan pas je per werkwoord aan. Werkwoorden uit een gefotografeerde lijst komen er vanzelf bij. Dit is het volledige overzicht per soort.");
     const F = OK.frans;
     OK.verbGroups().forEach(g => {
       const vs = OK.verbsInGroup(g.v).slice().sort((a, b) => (OK.verbIsCore(b.inf) ? 1 : 0) - (OK.verbIsCore(a.inf) ? 1 : 0)); const core = vs.filter(v => OK.verbIsCore(v.inf)).length; const det = el("details", "modgroup");

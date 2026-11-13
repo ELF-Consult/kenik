@@ -215,6 +215,21 @@
       if (!shown.length) box.innerHTML = `<p class="muted small">Nog geen woordpakketten. Die maak je onder Lijsten, met het vinkje "woordpakket".</p>`;
       listPicker(box, shown, f.key, l => `${l.items.length} woorden`, l => restrict ? false : sel.includes(l.id));
       if (!restrict) { const a = document.createElement("label"); a.className = "check"; a.innerHTML = `<input type="checkbox" data-all="1" ${value === "all" || !value ? "checked" : ""}><span>Alle woordpakketten voor dit kind, ook latere</span>`; box.appendChild(a); }
+    } else if (f.type === "verbpick") {
+      /* per soort de werkwoorden aanvinken; "basis" (vet) en "alles" vullen snel, daarna pas je per werkwoord aan */
+      const sel = new Set(Array.isArray(value) ? value : []); box = container(true); box.className = "stack";
+      const groupBox = (title, verbs, hasPreset) => {
+        const det = document.createElement("details"); det.className = "modgroup lgroup"; const n0 = verbs.filter(v => sel.has(v.inf)).length; det.open = n0 > 0;
+        const sum = document.createElement("summary"); sum.innerHTML = `<strong>${title}</strong> <span class="muted small" data-count></span>`; det.appendChild(sum);
+        if (hasPreset) { const r = document.createElement("div"); r.className = "row"; r.innerHTML = `<button class="pill-btn" type="button" data-fill="core">Basis</button><button class="pill-btn" type="button" data-fill="all">Alles</button><button class="pill-btn" type="button" data-fill="none">Niets</button>`; det.appendChild(r);
+          r.addEventListener("click", e => { const b = e.target.closest("[data-fill]"); if (!b) return; det.querySelectorAll("input").forEach(i => { i.checked = b.dataset.fill === "all" || (b.dataset.fill === "core" && OK.verbIsCore(i.value)); }); upd(); det.dispatchEvent(new Event("change", { bubbles: true })); }); }
+        const ch = document.createElement("div"); ch.className = "chips"; verbs.forEach(v => { const c = chip("checkbox", f.key, v.inf, `${v.inf}&nbsp;<span class="muted">${v.nl || ""}</span>`, sel.has(v.inf)); if (OK.verbIsCore(v.inf)) c.classList.add("core"); ch.appendChild(c); }); det.appendChild(ch);
+        const upd = () => { sum.querySelector("[data-count]").textContent = `${ch.querySelectorAll("input:checked").length} van ${verbs.length} aan`; }; ch.addEventListener("change", upd); upd();
+        box.appendChild(det);
+      };
+      OK.verbGroups().forEach(g => groupBox(g.l, OK.verbsInGroup(g.v), true));
+      const own = OK.customVerbs(); if (own.length) groupBox("Eigen werkwoorden", own, false);
+      const hint = document.createElement("p"); hint.className = "muted small"; hint.textContent = "Vet = basis (staat in de meeste handboeken van het 5e en 6e). Werkwoorden uit een gefotografeerde lijst komen er vanzelf bij."; wrap.appendChild(hint);
     } else if (f.type === "verbs") {
       const sel = Array.isArray(value) ? value : []; const all = OK.allVerbs(); const shown = restrict && sel.length ? all.filter(v => sel.includes(v.inf)) : all; box = container(false);
       shown.forEach(v => box.appendChild(chip("checkbox", f.key, v.inf, v.inf, restrict ? false : sel.includes(v.inf))));
