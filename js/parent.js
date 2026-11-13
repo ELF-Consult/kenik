@@ -446,18 +446,26 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
   function langCard(root, flagColor, lang, intro) { const card = el("div", "card stack"); card.innerHTML = `<div class="q-head"><h3><span class="langtag" style="background:${flagColor}">${lang}</span> Werkwoorden ${lang}</h3></div><p class="muted small">${intro}</p>`; root.appendChild(card); return card; }
   const anyChildHas = (...ids) => S().children.some(c => ids.some(id => c.modules[id]));
   function renderVerbs() {
-    const root = $("ptab-verbs"); root.innerHTML = ""; root.className = "stack ptab";
+    const root = $("ptab-verbs"); root.innerHTML = ""; root.className = "stack ptab"; const kids = S().children;
     const showFr = anyChildHas("frans-werkwoorden"), showEn = anyChildHas("engels-werkwoorden"), showNl = anyChildHas("grammatica", "spelling");
     if (!showFr && !showEn && !showNl) { root.appendChild(el("div", "card stack", `<p class="muted small">Geen enkel kind heeft nu een werkwoordenoefening aan (Franse of Engelse werkwoorden, Nederlandse grammatica of spelling). Zet die aan onder Kinderen, dan verschijnt de voorraad hier.</p>`)); return; }
     /* Frans */
     if (showFr) {
-    const fr = langCard(root, "#3b6fd6", "Frans", "Per kind vink je onder Kinderen aan welke werkwoorden en welke tijden; per soort vul je snel met de basis (vet) of alles, en dan pas je per werkwoord aan. Werkwoorden uit een gefotografeerde lijst komen er vanzelf bij. Dit is het volledige overzicht per soort.");
-    const F = OK.frans;
-    OK.verbGroups().forEach(g => {
-      const vs = OK.verbsInGroup(g.v).slice().sort((a, b) => (OK.verbIsCore(b.inf) ? 1 : 0) - (OK.verbIsCore(a.inf) ? 1 : 0)); const core = vs.filter(v => OK.verbIsCore(v.inf)).length; const det = el("details", "modgroup");
-      det.innerHTML = `<summary><strong>${esc(g.l)}</strong> <span class="muted small">${core} basis, ${vs.length - core} uitbreiding</span></summary>`;
-      const ch = el("div", "chips"); vs.forEach(v => ch.appendChild(el("span", "tag" + (OK.verbIsCore(v.inf) ? " core" : ""), `${esc(v.inf)} <span class="muted">${esc(v.nl || "")}</span>`))); det.appendChild(ch); fr.appendChild(det);
-    });
+    const fr = langCard(root, "#3b6fd6", "Frans", "Vink per kind aan welke werkwoorden Kenik afvraagt. Per soort vul je snel met de basis (vet, zoals in de handboeken van het 5e en 6e) of alles, en dan pas je per werkwoord aan. Werkwoorden uit een gefotografeerde lijst komen er vanzelf bij. De tijden kies je onder Kinderen.");
+    const F = OK.frans; const frKids = kids.filter(k => k.modules["frans-werkwoorden"]);
+    if (!frKids.length) fr.appendChild(el("p", "muted small", "Geen enkel kind heeft Franse werkwoorden aan. Zet dat aan onder Kinderen."));
+    else {
+      const who = el("div", "row"); const sel = el("select"); frKids.forEach(k => sel.appendChild(el("option", null, esc(k.name))).value = k.id);
+      sel.value = frKids.some(k => k.id === S().current) ? S().current : frKids[0].id;
+      who.appendChild(el("label", "f", "Voor wie")).appendChild(sel); fr.appendChild(who);
+      const holder = el("div", "stack"); fr.appendChild(holder); const saved = el("span", "muted small", ""); fr.appendChild(saved);
+      const draw = () => {
+        const k = kids.find(x => x.id === sel.value); const m = OK.modules["frans-werkwoorden"]; const cfg = k.modules["frans-werkwoorden"]; holder.innerHTML = "";
+        const f = m.schema.find(x => x.key === "verbs"); const ed = OK.fieldEditor(f, cfg.verbs, k, false); holder.appendChild(ed);
+        ed.addEventListener("change", () => { cfg.verbs = OK.readField(f, holder); m.normalize(cfg); OK.save(); saved.textContent = `Bewaard: ${OK.verbsFor(cfg).length} werkwoorden voor ${k.name}.`; });
+      };
+      sel.addEventListener("change", draw); draw();
+    }
     const own = (S().verbs || []); if (own.length) {
       fr.appendChild(el("strong", "small", "Eigen werkwoorden en werkwoorden uit het handboek"));
       const ch = el("div", "chips"); own.forEach(v => { const t = el("span", "tag stock", `${esc(v.inf)} <span class="muted">${esc(v.nl || "")}</span>`); const x = el("button", "x", "✕"); x.type = "button"; x.title = "Verwijderen"; x.addEventListener("click", () => { OK.unstockVerb(v.inf); renderVerbs(); }); t.appendChild(x); ch.appendChild(t); }); fr.appendChild(ch);
