@@ -223,7 +223,7 @@
         const sum = document.createElement("summary"); sum.innerHTML = `<strong>${title}</strong> <span class="muted small" data-count></span>`; det.appendChild(sum);
         if (hasPreset) { const r = document.createElement("div"); r.className = "row"; r.innerHTML = `<button class="pill-btn" type="button" data-fill="core">Basis</button><button class="pill-btn" type="button" data-fill="all">Alles</button><button class="pill-btn" type="button" data-fill="none">Niets</button>`; det.appendChild(r);
           r.addEventListener("click", e => { const b = e.target.closest("[data-fill]"); if (!b) return; det.querySelectorAll("input").forEach(i => { i.checked = b.dataset.fill === "all" || (b.dataset.fill === "core" && OK.verbIsCore(i.value)); }); upd(); det.dispatchEvent(new Event("change", { bubbles: true })); }); }
-        const ch = document.createElement("div"); ch.className = "chips"; verbs.forEach(v => { const c = chip("checkbox", f.key, v.inf, `${v.inf}&nbsp;<span class="muted">${v.nl || ""}</span>`, sel.has(v.inf)); if (OK.verbIsCore(v.inf)) c.classList.add("core"); ch.appendChild(c); }); det.appendChild(ch);
+        const ch = document.createElement("div"); ch.className = "chips verbchips"; verbs.forEach(v => { const c = chip("checkbox", f.key, v.inf, `${v.inf}&nbsp;<span class="muted">${v.nl || ""}</span>`, sel.has(v.inf)); if (OK.verbIsCore(v.inf)) c.classList.add("core"); ch.appendChild(c); }); det.appendChild(ch);
         const upd = () => { sum.querySelector("[data-count]").textContent = `${ch.querySelectorAll("input:checked").length} van ${verbs.length} aan`; }; ch.addEventListener("change", upd); upd();
         box.appendChild(det);
       };

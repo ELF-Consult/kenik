@@ -477,5 +477,10 @@ table.review .x{background:transparent;color:var(--fg2);font-size:18px;min-width
 
 /* werkwoorden: de basis van elke soort in het vet */
 .tag.core{font-weight:700;border-color:var(--fg)}
-.chip.core>span{font-weight:700}
-.chip input:checked+span .muted{color:rgba(255,255,255,.75)}
+/* werkwoordkeuze: compacte pillen zoals het overzicht, aangevinkt = licht blauw met blauwe rand */
+.verbchips .chip>span{min-height:0;min-width:0;padding:5px 12px;border-radius:999px;font-family:var(--font-body);font-size:14px;border:1px solid var(--line);background:#fff;color:var(--fg2);gap:4px}
+.verbchips .chip>span .muted{color:var(--muted)}
+.verbchips .chip.core>span{font-weight:700;color:var(--fg)}
+.verbchips .chip>input:checked+span{background:var(--blue-bg);border-color:var(--link);color:var(--link);transform:none}
+.verbchips .chip>input:checked+span .muted{color:var(--link);opacity:.75}
+.verbchips .chip>input:checked+span::before{content:"✓";font-weight:700;margin-right:4px}
