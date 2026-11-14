@@ -226,7 +226,7 @@
     box.appendChild(el("h3", null, "Nieuwe opdracht"));
     box.appendChild(el("p", "muted small", "Een opdracht verschijnt bovenaan op het startscherm van het kind. De instellingen liggen vast; afwerken levert de bonus op."));
     const kids = S().children;
-    const row1 = el("div", "row", `<label class="f">Voor wie<select id="t-child"><option value="all">Iedereen</option>${kids.map(k => `<option value="${k.id}" ${k.id === S().current ? "selected" : ""}>${esc(k.name)}</option>`).join("")}</select></label><label class="f">Welke oefening (klap open voor alle vakken)<select id="t-module"></select></label>`);
+    const row1 = el("div", "row", `<label class="f">Voor wie<select id="t-child">${kids.map(k => `<option value="${k.id}" ${k.id === S().current ? "selected" : ""}>${esc(k.name)}</option>`).join("")}</select></label><label class="f">Welke oefening (klap open voor alle vakken)<select id="t-module"></select></label>`);
     box.appendChild(row1);
     const fields = el("div", "stack"); box.appendChild(fields);
     const row2 = el("div", "row", `<label class="f" id="t-count-wrap" style="max-width:160px">Aantal vragen<select id="t-count"><option>10</option><option selected>15</option><option>20</option><option>30</option></select></label><label class="f" style="max-width:180px">Tegen wanneer<input type="date" id="t-due"></label><label class="f" style="max-width:140px">Bonus (coins)<input type="number" id="t-bonus" min="0" value="50"></label>`);
