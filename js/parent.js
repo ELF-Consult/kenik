@@ -85,10 +85,9 @@
       card.appendChild(row);
     });
     done.forEach(t => card.appendChild(el("div", "q-head taskrow", `<span>${esc(OK.taskTitle(t))}</span><span class="muted small">${OK.taskLists(t) ? "" : esc(t.score || "") + " · "}${OK.fmtDate(t.doneAt)} afgewerkt</span>`)));
-    const b = el("button", open.length || done.length ? "linklike" : "btn ghost", open.length || done.length ? `Nog iets klaarzetten voor ${esc(c.name)}` : "Een opdracht klaarzetten"); b.type = "button"; b.addEventListener("click", () => OK.openWizard(c.id, { task: true }));
-    /* geen opdracht: het kind kan wel al vrij oefenen met alles van zijn leerjaar; een opdracht is er om te zien of het erin zit */
-    if (!open.length && !done.length) card.appendChild(el("span", "muted small", `Nog geen opdracht. ${esc(c.name)} kan intussen vrij oefenen met alles voor ${esc(OK.gradeName(c.grade))}. Zet een opdracht klaar als je wil zien of iets gekend is.`));
-    card.appendChild(b);
+    /* geen opdracht: het kind kan wel al vrij oefenen met alles van zijn leerjaar; de grote knop "Iets klaarzetten" onderaan volstaat */
+    if (!open.length && !done.length) card.appendChild(el("span", "muted small", `Nog geen opdracht. ${esc(c.name)} kan intussen vrij oefenen met alles voor ${esc(OK.gradeName(c.grade))}. Zet iets klaar als je wil zien of het gekend is.`));
+    else { const b = el("button", "linklike", `Nog iets klaarzetten voor ${esc(c.name)}`); b.type = "button"; b.addEventListener("click", () => OK.openWizard(c.id, { task: true })); card.appendChild(b); }
     return card;
   }
 
