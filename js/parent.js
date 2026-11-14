@@ -706,7 +706,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
       });
       if (!mods.length) body.appendChild(el("p", "muted small", `Bij ${esc(c.name)} staat nog geen oefening aan. Zet er een aan via Meer › Kinderen › Instellen, of maak een lijst van een foto.`));
       body.appendChild(el("h3", "wz-group", "Uit het handboek"));
-      const a = el("button", "opt-row", `<span>${ICO_CAM.replace('width="36" height="36"', 'width="24" height="24"')} Lijst maken van een foto</span><span class="muted small">Woordjes, begrippen, vervoegingen</span>`); a.type = "button"; a.addEventListener("click", () => wzGo("photo"));
+      const a = el("button", "opt-row", `<span class="opt-ico">${ICO_CAM.replace('width="36" height="36"', 'width="22" height="22"')}<span>Lijst maken van een foto</span></span><span class="muted small">Woordjes, begrippen, vervoegingen</span>`); a.type = "button"; a.addEventListener("click", () => wzGo("photo"));
       body.appendChild(a);
     },
     /* instellingen van de gekozen oefening (bv. welke tafels, welke spellingregels) */
