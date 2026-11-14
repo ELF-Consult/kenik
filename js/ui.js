@@ -31,6 +31,9 @@
     window.scrollTo(0, 0);
   };
   OK.applyTheme = function () { /* het ontwerp volgt het scherm (zie OK.show); deze functie blijft bestaan voor oudere aanroepen */ };
+  /* fouten niet stil laten verdwijnen: toon ze kort onderaan, met bestand en regel, zodat een melding van een ouder bruikbaar is */
+  window.addEventListener("error", e => { try { OK.toast("Er liep iets mis: " + (e.message || "onbekende fout") + " (" + String(e.filename || "").split("/").pop().split("?")[0] + ":" + e.lineno + ")", true); } catch (x) { } });
+  window.addEventListener("unhandledrejection", e => { try { OK.toast("Er liep iets mis: " + (e.reason && e.reason.message || String(e.reason)), true); } catch (x) { } });
   OK.toast = function (msg, err) { const f = document.createElement("div"); f.className = "float" + (err ? " err" : ""); f.textContent = msg; document.body.appendChild(f); setTimeout(() => f.remove(), 1400); };
   document.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (!b) return; const g = b.dataset.go; if (g === "home") renderHome(); else if (g === "back") OK.show(prev); });
   $("coins").addEventListener("click", () => { if ($("s-play").classList.contains("hidden") && OK.child()) renderShop(); });
