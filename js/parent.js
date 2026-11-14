@@ -60,8 +60,8 @@
       root.appendChild(box);
     }
     kids.forEach(c => root.appendChild(kidStatus(c)));
-    const add = el("button", "btn big", `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8 h3.5 l1.5 -2.5 h6 l1.5 2.5 h3.5 a1 1 0 0 1 1 1 v9.5 a1 1 0 0 1 -1 1 h-16 a1 1 0 0 1 -1 -1 v-9.5 a1 1 0 0 1 1 -1z"/><circle cx="12" cy="13.5" r="3.6"/></svg> Nieuwe leerstof`); add.type = "button"; add.classList.add("wide");
-    add.addEventListener("click", () => OK.openWizard()); root.appendChild(add);
+    const add = el("button", "btn big", `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8 h3.5 l1.5 -2.5 h6 l1.5 2.5 h3.5 a1 1 0 0 1 1 1 v9.5 a1 1 0 0 1 -1 1 h-16 a1 1 0 0 1 -1 -1 v-9.5 a1 1 0 0 1 1 -1z"/><circle cx="12" cy="13.5" r="3.6"/></svg> Iets klaarzetten`); add.type = "button"; add.classList.add("wide");
+    add.addEventListener("click", () => OK.openWizard(null, { task: true })); root.appendChild(add);
   }
   function kidStatus(c) {
     const card = el("div", "card stack kidstatus");
@@ -285,8 +285,8 @@
   function renderLists() {
     const root = $("ptab-lists"); root.innerHTML = ""; root.className = "stack ptab";
     const kids = S().children;
-    const quick = el("div", "card stack", `<h3>Nieuwe leerstof</h3><p class="muted small">Foto van de bladzijde, nakijken, zeggen tegen wanneer. Meer is het niet.</p>`);
-    const qb = el("button", "btn big", "Nieuwe leerstof klaarzetten"); qb.type = "button"; qb.addEventListener("click", () => OK.openWizard()); quick.appendChild(qb); root.appendChild(quick);
+    const quick = el("div", "card stack", `<h3>Lijst uit het handboek</h3><p class="muted small">Foto van de bladzijde, nakijken, en zeggen tegen wanneer het gekend moet zijn. Meer is het niet.</p>`);
+    const qb = el("button", "btn big", "Foto nemen van de bladzijde"); qb.type = "button"; qb.addEventListener("click", () => OK.openWizard()); quick.appendChild(qb); root.appendChild(quick);
     const box = el("details", "card"); box.innerHTML = `<summary class="muted small">Lijst maken met alle opties (meerdere foto's samenvoegen, alleen opslaan zonder opdracht)</summary>`; box.open = !!draftItems; root.appendChild(box);
     const form = el("div", "stack"); form.id = "photo-block"; form.style.marginTop = "14px";
     form.innerHTML = `
@@ -602,8 +602,8 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
   OK.openWizardNewKid = function () { wz = { child: null, step: null, hist: [], items: [], verbs: [], name: "", subject: "Frans", listId: null, taskId: null }; OK.show("s-wizard"); wzGo("kid"); };
   OK.openWizard = function (childId, opts) {
     const kids = S().children; opts = opts || {};
-    wz = { child: childId || (kids.length === 1 ? kids[0].id : null), step: null, hist: [], items: [], verbs: [], name: "", subject: "Frans", listId: null, taskId: null };
-    OK.show("s-wizard"); wzGo(!kids.length ? "kid" : wz.child ? (opts.task ? "what" : "photo") : "who");
+    wz = { child: childId || (kids.length === 1 ? kids[0].id : null), step: null, hist: [], items: [], verbs: [], name: "", subject: "Frans", listId: null, taskId: null, task: !!opts.task };
+    OK.show("s-wizard"); wzGo(!kids.length ? "kid" : wz.child ? (wz.task ? "what" : "photo") : "who");
   };
   function wzGo(step, noHist) {
     if (wz.step && !noHist && wz.step !== "reading") wz.hist.push(wz.step);
@@ -654,7 +654,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     who(body) {
       body.appendChild(wzHead("Voor wie is het?"));
       const grid = el("div", "players");
-      S().children.forEach(c => { const b = el("button", "player", `${OK.avatarHTML(c)}<strong>${esc(c.name)}</strong><span class="muted small">${esc(OK.gradeName(c.grade))}</span>`); b.type = "button"; b.addEventListener("click", () => { wz.child = c.id; wzGo("photo"); }); grid.appendChild(b); });
+      S().children.forEach(c => { const b = el("button", "player", `${OK.avatarHTML(c)}<strong>${esc(c.name)}</strong><span class="muted small">${esc(OK.gradeName(c.grade))}</span>`); b.type = "button"; b.addEventListener("click", () => { wz.child = c.id; wzGo(wz.task ? "what" : "photo"); }); grid.appendChild(b); });
       body.appendChild(grid);
       const nw = el("button", "btn ghost", "Nieuw kind toevoegen"); nw.type = "button"; nw.addEventListener("click", () => wzGo("kid")); body.appendChild(nw);
     },
