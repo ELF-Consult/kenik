@@ -11,7 +11,7 @@
   const armed = (btn, fn) => btn.addEventListener("click", () => { if (btn.dataset.armed) { fn(); } else { btn.dataset.armed = "1"; btn.dataset.label = btn.textContent; btn.textContent = "Zeker? Klik nog eens."; btn.classList.add("armed"); setTimeout(() => { delete btn.dataset.armed; btn.textContent = btn.dataset.label; btn.classList.remove("armed"); }, 3500); } });
 
   /* Drie ingangen: Overzicht (kennen ze het?), Leerstof (wat ze moeten kennen) en Meer (al de rest). */
-  const MAIN = { home: ["home"], stof: ["lists", "tasks", "verbs"], meer: ["kids", "rewards", "results", "family", "settings"] };
+  const MAIN = { home: ["home"], stof: ["tasks", "lists", "verbs"], meer: ["kids", "rewards", "results", "family", "settings"] };
   const SUBLABEL = { lists: "Lijsten", tasks: "Opdrachten", verbs: "Werkwoorden", kids: "Kinderen", rewards: "Winkel", results: "Resultaten", family: "Gezin en toestellen", settings: "Instellingen" };
   function showTab(tab) {
     document.querySelectorAll(".ptab").forEach(x => x.classList.toggle("hidden", x.id !== "ptab-" + tab));
@@ -601,6 +601,8 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
   const wzHead = (title, sub) => el("div", "stack wz-head", `<h1>${esc(title)}</h1>${sub ? `<p class="muted">${esc(sub)}</p>` : ""}`);
   const wzMsg = t => { const m = $("wz-msg"); if (m) m.textContent = t; };
   OK.openWizardNewKid = function () { wz = { child: null, step: null, hist: [], items: [], verbs: [], name: "", subject: "Frans", listId: null, taskId: null }; OK.show("s-wizard"); wzGo("kid"); };
+  /* vanuit een lijstkeuze (opdracht of wizard): een nieuwe lijst maken van een foto */
+  OK.wizardNewList = function (childId) { if (wz) wzGo("photo"); else OK.openWizard(childId); };
   OK.openWizard = function (childId, opts) {
     const kids = S().children; opts = opts || {};
     wz = { child: childId || (kids.length === 1 ? kids[0].id : null), step: null, hist: [], items: [], verbs: [], name: "", subject: "Frans", listId: null, taskId: null, task: !!opts.task, module: null, config: null };
