@@ -72,7 +72,9 @@ window.OK = window.OK || {};
   /* avatar: gekozen icoontje (emoji) of de eerste letter; kleur per kind. Later kan hier een foto bij. */
   const AV_COLORS = ["#5b8cff", "#3ddc97", "#ff8a1f", "#c06bff", "#ff5d7a", "#2fc4d8"];
   OK.AVATARS = ["🐶", "🐱", "🦊", "🐼", "🦄", "🐸", "🐯", "🦁", "🐧", "🦖", "🐙", "🦋", "🚀", "⚽", "🎸", "🌈", "🏰", "🐴"];
-  OK.avatarHTML = (c, size) => { const i = Math.max(0, S.children.indexOf(c)); const bg = AV_COLORS[i % AV_COLORS.length]; return `<div class="avatar${c.avatar ? " emo" : ""}" style="background:${bg}${size ? `;width:${size}px;height:${size}px;font-size:${Math.round(size * .5)}px` : ""}">${c.avatar || String(c.name || "?")[0].toUpperCase()}</div>`; };
+  OK.avatarColors = AV_COLORS;
+  OK.avatarColor = c => c.color || AV_COLORS[Math.max(0, S.children.indexOf(c)) % AV_COLORS.length];
+  OK.avatarHTML = (c, size) => { const bg = OK.avatarColor(c); return `<div class="avatar${c.avatar ? " emo" : ""}" style="background:${bg}${size ? `;width:${size}px;height:${size}px;font-size:${Math.round(size * .5)}px` : ""}">${c.avatar || String(c.name || "?")[0].toUpperCase()}</div>`; };
   OK.childById = id => S.children.find(c => c.id === id) || null;
   OK.childName = id => id === "all" ? "iedereen" : ((OK.childById(id) || {}).name || "?");
   OK.forChild = (thing, childId) => thing.children === "all" || !thing.children || thing.children.includes(childId);

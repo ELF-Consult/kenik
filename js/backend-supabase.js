@@ -38,7 +38,7 @@
       (docs || []).forEach(d => { if (d.key === "settings") Object.assign(S.settings, d.data || {}); else S[d.key] = d.data || []; });
       if (kids) {
         const byId = {}; (prog || []).forEach(p => byId[p.child_id] = p);
-        S.children = kids.map(k => { const p = byId[k.id] || {}; return { id: k.id, name: k.name, grade: k.grade, theme: k.theme, modules: k.modules || {}, points: p.points || 0, streak: p.streak || 0, best: p.best || 0, garden: p.garden || { flowers: 0, collected: [], parties: 0 }, created: k.created_at }; });
+        S.children = kids.map(k => { const p = byId[k.id] || {}; return { id: k.id, name: k.name, grade: k.grade, theme: k.theme, avatar: (k.theme && k.theme.avatar) || undefined, color: (k.theme && k.theme.color) || undefined, modules: k.modules || {}, points: p.points || 0, streak: p.streak || 0, best: p.best || 0, garden: p.garden || { flowers: 0, collected: [], parties: 0 }, created: k.created_at }; });
         S.stats = {}; S.sessions = []; S.log = [];
         (prog || []).forEach(p => { S.stats[p.child_id] = p.stats || {}; S.sessions = S.sessions.concat(p.sessions || []); S.log = S.log.concat(p.log || []); });
         S.sessions.sort((a, b) => b.d.localeCompare(a.d)); S.log.sort((a, b) => b.d.localeCompare(a.d));
@@ -49,7 +49,7 @@
       if (OK.onRemoteChange) OK.onRemoteChange();
     } catch (e) { console.warn("pull", e); }
   }
-  const snapshot = () => { const S = OK.state(); const o = {}; DOC_KEYS.forEach(k => o[k] = JSON.stringify(k === "settings" ? S.settings : S[k] || [])); S.children.forEach(c => { o["child:" + c.id] = JSON.stringify([c.name, c.grade, c.theme, c.modules]); o["prog:" + c.id] = JSON.stringify([c.points, c.streak, c.best, c.garden, S.stats[c.id] || {}]); }); o.sessions = String((S.sessions || []).length); o.requests = JSON.stringify(S.requests || []); return o; };
+  const snapshot = () => { const S = OK.state(); const o = {}; DOC_KEYS.forEach(k => o[k] = JSON.stringify(k === "settings" ? S.settings : S[k] || [])); S.children.forEach(c => { o["child:" + c.id] = JSON.stringify([c.name, c.grade, c.theme, c.modules, c.avatar, c.color]); o["prog:" + c.id] = JSON.stringify([c.points, c.streak, c.best, c.garden, S.stats[c.id] || {}]); }); o.sessions = String((S.sessions || []).length); o.requests = JSON.stringify(S.requests || []); return o; };
 
   /* ---------- terugschrijven ---------- */
   function schedulePush() { clearTimeout(pushTimer); pushTimer = setTimeout(push, 1500); }
@@ -60,7 +60,7 @@
         for (const k of DOC_KEYS) if (now[k] !== lastPushed[k]) await c.from("family_docs").upsert({ family_id: familyId, key: k, data: k === "settings" ? S.settings : S[k] || [], updated_at: new Date().toISOString() });
         if (now.settings !== lastPushed.settings) await c.from("families").update({ region: S.settings.region, lang: S.settings.lang }).eq("id", familyId);
         for (const ch of S.children) {
-          if (now["child:" + ch.id] !== lastPushed["child:" + ch.id]) await c.from("children").upsert({ id: ch.id, family_id: familyId, name: ch.name, grade: ch.grade, theme: ch.theme, modules: ch.modules });
+          if (now["child:" + ch.id] !== lastPushed["child:" + ch.id]) await c.from("children").upsert({ id: ch.id, family_id: familyId, name: ch.name, grade: ch.grade, theme: Object.assign({}, ch.theme, { avatar: ch.avatar || null, color: ch.color || null }), modules: ch.modules }); /* icoontje en kleur reizen mee in theme */
           if (now["prog:" + ch.id] !== lastPushed["prog:" + ch.id] || now.sessions !== lastPushed.sessions) await c.from("child_progress").upsert(progressRow(ch));
         }
         // verwijderde kinderen

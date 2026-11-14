@@ -171,7 +171,13 @@
     const aw = el("div", "stack"); aw.appendChild(el("p", "muted small", "Icoontje (staat bovenaan naast de naam)"));
     const av = el("div", "avpick");
     const paint = () => { av.innerHTML = ""; const none = el("button", "avopt" + (!avatar ? " sel" : ""), `<div class="avatar" style="background:#5b8cff;width:36px;height:36px;font-size:16px">${esc(c.name[0] || "?").toUpperCase()}</div>`); none.type = "button"; none.title = "Beginletter"; none.addEventListener("click", () => { avatar = ""; paint(); }); av.appendChild(none); OK.AVATARS.forEach(e => { const b = el("button", "avopt" + (avatar === e ? " sel" : ""), e); b.type = "button"; b.addEventListener("click", () => { avatar = e; paint(); }); av.appendChild(b); }); };
-    paint(); aw.appendChild(av); wrap.appendChild(aw);
+    paint(); aw.appendChild(av);
+    /* kleur van het rondje: standaard op volgorde, maar elk kind mag zijn eigen kleur kiezen */
+    let color = c.color || "";
+    aw.appendChild(el("p", "muted small", "Kleur"));
+    const cp = el("div", "avpick");
+    const paintC = () => { cp.innerHTML = ""; OK.avatarColors.forEach(col => { const b = el("button", "avopt colopt" + (col === (color || OK.avatarColor(c)) ? " sel" : "")); b.type = "button"; b.style.background = col; b.title = col; b.addEventListener("click", () => { color = col; paintC(); }); cp.appendChild(b); }); };
+    paintC(); aw.appendChild(cp); wrap.appendChild(aw);
     // modules
     wrap.appendChild(el("p", "muted small", "Wat oefent dit kind? Vink aan en stel in. De voorstellen volgen het leerjaar; pas gerust aan."));
     const groups = {}; Object.values(OK.modules).forEach(m => { (groups[m.group] = groups[m.group] || []).push(m); });
@@ -202,7 +208,7 @@
     row.append(save, cancel, reset, del); wrap.appendChild(row);
     const msg = el("p", "muted small", ""); wrap.appendChild(msg);
     save.addEventListener("click", () => {
-      c.name = $("e-name").value.trim() || c.name; c.grade = +$("e-grade").value; c.avatar = avatar || undefined;
+      c.name = $("e-name").value.trim() || c.name; c.grade = +$("e-grade").value; c.avatar = avatar || undefined; c.color = color || undefined;
       const mods = {};
       modRoot.querySelectorAll(".modcfg").forEach(box => { const m = OK.modules[box.dataset.mod]; if (!box.querySelector("[data-on]").checked) return; const cfg = {}; (m.schema || []).forEach(f => { const v = OK.readField(f, box); if (v !== undefined) cfg[f.key] = v; }); if (m.normalize) m.normalize(cfg); mods[m.id] = cfg; });
       c.modules = mods; OK.save(); msg.textContent = "Opgeslagen."; setTimeout(() => { editing = null; renderKids(); }, 400);
@@ -449,8 +455,8 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
   const anyChildHas = (...ids) => S().children.some(c => ids.some(id => c.modules[id]));
   function renderVerbs() {
     const root = $("ptab-verbs"); root.innerHTML = ""; root.className = "stack ptab"; const kids = S().children;
-    const showFr = anyChildHas("frans-werkwoorden"), showEn = anyChildHas("engels-werkwoorden"), showNl = anyChildHas("grammatica", "spelling");
-    if (!showFr && !showEn && !showNl) { root.appendChild(el("div", "card stack", `<p class="muted small">Geen enkel kind heeft nu een werkwoordenoefening aan (Franse of Engelse werkwoorden, Nederlandse grammatica of spelling). Zet die aan onder Kinderen, dan verschijnt de voorraad hier.</p>`)); return; }
+    const showFr = anyChildHas("frans-werkwoorden"), showEn = anyChildHas("engels-werkwoorden");
+    if (!showFr && !showEn) { root.appendChild(el("div", "card stack", `<p class="muted small">Geen enkel kind heeft nu een werkwoordenoefening aan (Franse of Engelse werkwoorden). Zet die aan onder Kinderen, dan verschijnt de voorraad hier.</p>`)); return; }
     /* Frans */
     if (showFr) {
     const fr = langCard(root, "#3b6fd6", "Frans", "Vink per kind aan welke werkwoorden Kenik afvraagt. Bij een nieuw kind staan de gangbare uit het 5e en 6e al aan. Werkwoorden uit een gefotografeerde lijst komen er vanzelf bij. De tijden kies je onder Kinderen.");
@@ -492,12 +498,6 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     en.appendChild(el("div", "stack", `<strong class="small">Onregelmatig werkwoord dat Kenik niet kent (vul de zes vormen in)</strong><div class="row"><label class="f">Infinitief<input type="text" id="ev-inf" placeholder="bv. forget"></label><label class="f">Past simple<input type="text" id="ev-past" placeholder="forgot (leeg = regelmatig)"></label><label class="f">Past participle<input type="text" id="ev-pp" placeholder="forgotten"></label><label class="f">Nederlands (mag leeg)<input type="text" id="ev-nl" placeholder="vergeten"></label></div><div class="row"><button class="btn" id="btn-add-ev" type="button">Werkwoord opslaan</button><span class="muted small" id="ev-msg"></span></div>`));
     $("btn-add-ev").addEventListener("click", () => { const inf = $("ev-inf").value.trim(), nl = $("ev-nl").value.trim(); let past = $("ev-past").value.trim(), pp = $("ev-pp").value.trim(); if (!inf) { $("ev-msg").textContent = "Infinitief invullen."; return; } if (!past) past = /e$/.test(inf) ? inf + "d" : /[^aeiou]y$/.test(inf) ? inf.slice(0, -1) + "ied" : inf + "ed"; if (!pp) pp = past; OK.addEnglishVerb(inf, past, pp, nl); renderVerbs(); $("ev-msg").textContent = `${inf} - ${past} - ${pp} toegevoegd.`; });
     }
-    /* Nederlands */
-    if (showNl) {
-    const nl = langCard(root, "#e67e22", "Nederlands", "Ter info: deze ingebouwde werkwoorden gebruiken Grammatica (tijd herkennen, omzetten, infinitief) en Spelling (d/t, verleden tijd, voltooid deelwoord). Er valt hier niets te kiezen; alle vormen staan vast, zodat de oefeningen altijd kloppen.");
-    const dv = OK.dutchVerbs ? OK.dutchVerbs() : [];
-    nl.appendChild(el("div", "chips", dv.map(v => `<span class="tag">${esc(v[0])} <span class="muted">${esc(v[2])} · ${esc(v[4])}</span></span>`).join(" ")));
-    }
   }
 
   /* ---------- beloningen ---------- */
@@ -532,7 +532,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
         sessions.slice(0, 40).forEach(x => {
           const m = OK.modules[x.module]; const tagCls = x.pct >= 90 ? "good" : x.pct >= 60 ? "warn" : "bad";
           const d = el("details", "session"); d.innerHTML = `<summary><span class="row between"><span><strong>${m ? esc(m.name) : esc(x.module)}</strong> <span class="tag">${x.mode === "test" ? "toets" : "oefenen"}${x.task ? " · opdracht" : ""}</span><br><span class="muted small">${new Date(x.d).toLocaleString("nl-BE", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span></span><span class="row"><span class="tag ${tagCls}">${x.ok}/${x.n} · ${x.pct}%</span>${x.points ? `<span class="tag">+${x.points}</span>` : ""}</span></span></summary>
-            <div class="table-wrap"><table><thead><tr><th>Vraag</th><th>Antwoord</th><th>Ingevuld</th><th></th></tr></thead><tbody>${x.items.map(it => `<tr><td>${esc(it.label)}</td><td>${esc(it.answer)}</td><td class="${it.ok ? "" : "muted"}">${esc(it.given || "-")}</td><td>${it.ok ? (it.tries ? '<span class="tag warn">2e poging</span>' : '<span class="tag good">juist</span>') : '<span class="tag bad">fout</span>'}</td></tr>`).join("")}</tbody></table></div>`;
+            <div class="table-wrap"><table><thead><tr><th>Vraag</th><th>Antwoord</th><th>Ingevuld</th><th></th></tr></thead><tbody>${x.items.map(it => `<tr><td>${esc(it.label)}</td><td>${esc(it.answer)}</td><td class="${it.ok ? "" : "muted"}">${esc(it.given || "-")}${it.first && it.first !== it.given ? ` <span class="muted small">(eerst: ${esc(it.first)})</span>` : ""}</td><td>${it.ok ? (it.tries ? '<span class="tag warn">2e poging</span>' : '<span class="tag good">juist</span>') : '<span class="tag bad">fout</span>'}</td></tr>`).join("")}</tbody></table></div>`;
           sl.appendChild(d);
         });
         out.appendChild(sl);

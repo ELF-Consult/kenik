@@ -127,7 +127,7 @@
     else qs = OK.pickAdaptive(child, pool, Math.min(n, pool.length));
     const s = { child, module: m, mode: opts.mode, taskId: opts.taskId || null, qs, i: 0, tries: 0, results: [], points: 0, locked: false, t0: 0 };
     s.current = () => s.qs[s.i];
-    s.start = () => { s.tries = 0; s.locked = false; s.t0 = Date.now(); };
+    s.start = () => { s.tries = 0; s.firstGiven = ""; s.locked = false; s.t0 = Date.now(); };
     /* answer(given) -> {status:'ok'|'retry'|'reveal', r, pts, streakBonus, goalBonus} */
     s.answer = function (given) {
       const q = s.current(); if (!q || s.locked) return null;
@@ -141,12 +141,13 @@
         OK.logExercise(child.id, pts);
         if (s.mode !== "test" && before + 1 === set.goal && set.goalBonus) { OK.addPoints(child.id, set.goalBonus, "dagdoel"); goalBonus = set.goalBonus; }
         s.points += pts + goalBonus;
-        s.results.push({ q, ok: true, tries: s.tries, given });
+        s.results.push({ q, ok: true, tries: s.tries, given, first: s.firstGiven || "" });
         OK.save();
         return { status: "ok", r, pts, streakBonus, goalBonus };
       }
       s.tries++; { const st = OK.stat(child.id, q.key); st.wrong++; st.lastOk = false; } child.streak = 0; OK.save();
-      if (s.mode === "test" || s.tries >= 2) { s.locked = true; s.results.push({ q, ok: false, given }); return { status: "reveal", r }; }
+      if (s.mode === "test" || s.tries >= 2) { s.locked = true; s.results.push({ q, ok: false, given, first: s.firstGiven || "" }); return { status: "reveal", r }; }
+      s.firstGiven = given; /* eerste foute antwoord, voor het ouderpaneel */
       return { status: "retry", r };
     };
     s.skip = function () { const q = s.current(); if (!q || s.locked) return; { const st = OK.stat(child.id, q.key); st.wrong++; st.lastOk = false; } child.streak = 0; s.locked = true; s.results.push({ q, ok: false, given: "" }); OK.save(); };
@@ -166,7 +167,7 @@
       if (n) {
         const st = OK.state(); st.sessions = st.sessions || [];
         st.sessions.unshift({ id: OK.uid(), child: child.id, module: m.id, mode: s.mode, d: OK.nowISO(), n, ok, pct, points: s.points + bonus, task: !!taskDone,
-          items: s.results.map(r => ({ label: OK.itemLabel(r.q), answer: OK.display(r.q), given: r.given || "", ok: r.ok, tries: r.tries || 0 })) });
+          items: s.results.map(r => ({ label: OK.itemLabel(r.q), answer: OK.display(r.q), given: r.given || "", ok: r.ok, tries: r.tries || 0, first: r.first || "" })) });
         if (st.sessions.length > 400) st.sessions.length = 400;
       }
       OK.save();

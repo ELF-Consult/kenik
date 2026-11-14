@@ -262,6 +262,8 @@ details>summary{cursor:pointer}
 .avpick{display:flex;flex-wrap:wrap;gap:8px}
 .avopt{width:48px;height:48px;border-radius:12px;border:2px solid var(--line);background:var(--bg2);font-size:26px;display:grid;place-items:center;cursor:pointer;padding:0}
 .avopt.sel{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 18%,transparent)}
+.avopt.colopt{border-radius:50%;width:40px;height:40px;border:3px solid transparent}
+.avopt.colopt.sel{border-color:var(--fg);box-shadow:0 0 0 2px #fff inset}
 @media (max-width:560px){ .whobadge .who-sub{display:none} .topbar:has(.whobadge:not(.hidden)) #brand-name{display:none} .topbar .row{gap:8px} .coins{padding:6px 10px 6px 6px;font-size:16px} }
 
 /* startpagina */
