@@ -12,7 +12,7 @@
 
   /* Drie ingangen: Overzicht (kennen ze het?), Leerstof (wat ze moeten kennen) en Meer (al de rest). */
   const MAIN = { home: ["home"], stof: ["tasks", "lists", "verbs"], meer: ["kids", "rewards", "results", "family", "settings"] };
-  const SUBLABEL = { lists: "Lijsten", tasks: "Opdrachten", verbs: "Werkwoorden", kids: "Kinderen", rewards: "Winkel", results: "Resultaten", family: "Gezin en toestellen", settings: "Instellingen" };
+  const SUBLABEL = { lists: "Uit het handboek", tasks: "Opdrachten", verbs: "Werkwoorden", kids: "Kinderen", rewards: "Winkel", results: "Resultaten", family: "Gezin en toestellen", settings: "Instellingen" };
   function showTab(tab) {
     document.querySelectorAll(".ptab").forEach(x => x.classList.toggle("hidden", x.id !== "ptab-" + tab));
     document.querySelectorAll("#psub .tab").forEach(x => x.classList.toggle("active", x.dataset.tab === tab));
@@ -61,7 +61,7 @@
       root.appendChild(box);
     }
     kids.forEach(c => root.appendChild(kidStatus(c)));
-    const add = el("button", "btn big", `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8 h3.5 l1.5 -2.5 h6 l1.5 2.5 h3.5 a1 1 0 0 1 1 1 v9.5 a1 1 0 0 1 -1 1 h-16 a1 1 0 0 1 -1 -1 v-9.5 a1 1 0 0 1 1 -1z"/><circle cx="12" cy="13.5" r="3.6"/></svg> Iets klaarzetten`); add.type = "button"; add.classList.add("wide");
+    const add = el("button", "btn big", `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg> Opdracht klaarzetten`); add.type = "button"; add.classList.add("wide");
     add.addEventListener("click", () => OK.openWizard(null, { task: true })); root.appendChild(add);
   }
   function kidStatus(c) {
