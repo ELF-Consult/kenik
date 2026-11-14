@@ -610,9 +610,12 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     wz.step = step; const n = WZ_N[step];
     $("wz-step").textContent = n ? `Stap ${n} van 4` : ""; $("wz-bar").classList.toggle("hidden", !n);
     [...$("wz-bar").children].forEach((i, k) => i.classList.toggle("on", k < n));
-    $("wz-back").textContent = wz.hist.length ? "Terug" : "Sluiten"; $("wz-back").classList.toggle("hidden", step === "done");
+    /* links "← Terug" (enkel als er iets is om naar terug te gaan, anders een lege plek), rechts altijd een kruisje om te sluiten */
+    $("wz-back").style.visibility = wz.hist.length ? "visible" : "hidden"; $("wz-close").classList.toggle("hidden", step === "done");
     const body = $("wz-body"); body.innerHTML = ""; WZ[step](body); window.scrollTo(0, 0);
   }
+  function wzClose() { if (!wz) return; if (photoCtl) photoCtl.abort(); stopPhone(); const wasEdit = wz.edit; wz = null; if (wasEdit) OK.openParent("stof", "lists"); else OK.openParent(); }
+  $("wz-close").addEventListener("click", wzClose);
   $("wz-back").addEventListener("click", () => { if (!wz) return; if (photoCtl) photoCtl.abort(); stopPhone(); if (wz.hist.length) wzGo(wz.hist.pop(), true); else { const wasEdit = wz.edit; wz = null; if (wasEdit) OK.openParent("stof", "lists"); else OK.openParent(); } });
   const wzChild = () => OK.childById(wz.child);
   const wzList = () => S().lists.find(l => l.id === wz.listId);
