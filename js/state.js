@@ -74,7 +74,7 @@ window.OK = window.OK || {};
   OK.AVATARS = ["🐶", "🐱", "🦊", "🐼", "🐘", "🦁", "🐯", "🐨", "🐰", "🦒", "🐵", "🐻", "🐷", "🐸", "🦄", "🐧", "🦉", "🐢", "🐬", "🦈", "🐙", "🦋", "🐞", "🦓", "🦖", "🐴", "🚀", "⚽", "🎸", "🌈", "🏰", "🎨"];
   OK.avatarColors = AV_COLORS;
   OK.avatarColor = c => c.color || AV_COLORS[Math.max(0, S.children.indexOf(c)) % AV_COLORS.length];
-  OK.avatarHTML = (c, size) => { const bg = OK.avatarColor(c); return `<div class="avatar${c.avatar ? " emo" : ""}" style="background:${bg}${size ? `;width:${size}px;height:${size}px;font-size:${Math.round(size * (c.avatar ? .64 : .5))}px` : ""}">${c.avatar || String(c.name || "?")[0].toUpperCase()}</div>`; };
+  OK.avatarHTML = (c, size) => { const bg = OK.avatarColor(c); return `<div class="avatar${c.avatar ? " emo" : ""}" style="background:${bg}${size ? `;width:${size}px;height:${size}px;font-size:${Math.round(size * (c.avatar ? .78 : .5))}px` : ""}">${c.avatar || String(c.name || "?")[0].toUpperCase()}</div>`; };
   OK.childById = id => S.children.find(c => c.id === id) || null;
   OK.childName = id => id === "all" ? "iedereen" : ((OK.childById(id) || {}).name || "?");
   OK.forChild = (thing, childId) => thing.children === "all" || !thing.children || thing.children.includes(childId);
