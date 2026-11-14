@@ -9,6 +9,18 @@
   const uniq = a => [...new Set(a)];
 
   /* ---------- ingebouwde woordpakketten per spellingmoeilijkheid ---------- */
+  /* dictee: het woord staat op het scherm met enkel de moeilijkheid weggelaten (p _ _ w), zodat verstaan geen probleem is en de spelling de vraag blijft */
+  const FOCUS = { "ei of ij": ["ei", "ij"], "au of ou": ["au", "ou"], "d of t op het einde": ["d", "t"], "dubbele medeklinker": null, "open en gesloten lettergreep": null, "ng en nk": ["ng", "nk"], "sch en schr": ["schr", "sch"], "ch of g": ["ch", "g"] };
+  function gapWord(w, src) {
+    const esc = x => x.replace(/</g, "&lt;"); const blank = n => "_".repeat(n);
+    const f = FOCUS[src];
+    if (f === null) return blank(w.length); /* dubbele medeklinker, open/gesloten lettergreep: de hele schrijfwijze is de vraag, enkel de lengte tonen */
+    if (!f) { /* eigen woordpakket of onbekend: lengte tonen, klinkers open laten */ return esc(w).replace(/[aeiouy]/g, "_"); }
+    if (src === "d of t op het einde") return esc(w.slice(0, -1)) + "_";
+    let out = w, done = false; const n = Math.min(...f.map(g => g.length)); /* evenveel streepjes voor beide keuzes, anders verraadt de lengte het antwoord (ch of g) */
+    for (const g of f) { const re = new RegExp(g, "g"); if (re.test(w)) { out = w.replace(re, blank(n)); done = true; break; } }
+    return esc(done ? out : w.replace(/[aeiouy]/g, "_"));
+  }
   const PACKS = {
     "ei of ij": "trein klein reis geit eiland feest plein dweil konijn tijd blij rijst wijn ijs pijn fijn kijken schrijven vrij".split(" "),
     "au of ou": "blauw pauw gauw saus kous zout mouw koud goud fout hout vrouw touw auto pauze".split(" "),
@@ -32,11 +44,21 @@
     return [...out].filter(x => /^[a-zëéï]+$/.test(x));
   }
   const speakable = () => !!(window.speechSynthesis && window.SpeechSynthesisUtterance);
+  /* de beste beschikbare Nederlandse stem: eerst Vlaams, liefst een "natural"/Google/Ellen-stem; nooit de compacte of eSpeak-stemmen */
+  function bestVoice() {
+    const vs = window.speechSynthesis.getVoices().filter(v => /^nl/i.test(v.lang) && !/compact|espeak/i.test(v.name));
+    const score = v => (/^nl-BE/i.test(v.lang) ? 20 : 0) + (/natural|neural|premium|enhanced/i.test(v.name) ? 10 : 0) + (/google/i.test(v.name) ? 6 : 0) + (/ellen|xander|claire|fenna|colette|maarten/i.test(v.name) ? 5 : 0) + (v.localService ? 0 : 1);
+    return vs.sort((a, b) => score(b) - score(a))[0] || null;
+  }
   OK.speak = function (text, lang) {
     if (!speakable()) return false;
-    try { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = lang || "nl-BE"; u.rate = 0.85;
-      const vs = window.speechSynthesis.getVoices(); const v = vs.find(x => /^nl-BE/i.test(x.lang)) || vs.find(x => /^nl/i.test(x.lang)); if (v) u.voice = v;
-      window.speechSynthesis.speak(u); return true; } catch (e) { return false; }
+    try {
+      window.speechSynthesis.cancel(); const v = bestVoice();
+      /* een los woord is voor elke stem het moeilijkst te verstaan: eerst traag het woord, dan in een korte zin, dan nog eens */
+      const parts = /\s/.test(text) ? [[text, 0.85]] : [[text, 0.75], [`Schrijf: ${text}.`, 0.85], [text, 0.7]];
+      parts.forEach(([t, rate], i) => { const u = new SpeechSynthesisUtterance(t); u.lang = lang || (v ? v.lang : "nl-BE"); u.rate = rate; if (v) u.voice = v; if (i) u.volume = 1; window.speechSynthesis.speak(u); });
+      return true;
+    } catch (e) { return false; }
   };
 
   /* ---------- werkwoordspelling ---------- */
@@ -88,7 +110,7 @@
       words = uniq(words.map(x => JSON.stringify(x))).map(x => JSON.parse(x));
       const canSpeak = speakable();
       words.forEach(({ w, src }) => {
-        if (types.includes("dictee") && canSpeak) out.push({ key: `sp|d|${w}`, module: "spelling", kind: "text", lang: "nl", speak: w, prompt: { meta: "Dictee · " + src, main: `<button class="btn ghost speak-btn" type="button" data-speak="${w}">🔊 Luister nog eens</button>` }, answer: w, exactText: true, explain: `Het woord was: ${w}` });
+        if (types.includes("dictee") && canSpeak) out.push({ key: `sp|d|${w}`, module: "spelling", kind: "text", lang: "nl", speak: w, prompt: { meta: "Dictee · " + src, main: `<div class="gapword">${gapWord(w, src)}</div><button class="btn ghost speak-btn" type="button" data-speak="${w}">🔊 Luister nog eens</button>` }, answer: w, exactText: true, explain: `Het woord was: ${w}` });
         if (types.includes("kies")) { const wrong = shuffle(misspellings(w)).slice(0, 3); if (wrong.length >= 2) out.push({ key: `sp|k|${w}`, module: "spelling", kind: "choice", prompt: { meta: "Welke is juist geschreven? · " + src }, answer: w, choices: shuffle([w].concat(wrong)), explain: `Juist is: ${w}` }); }
       });
       if (types.includes("dt")) out.push(...dtPool(Math.max(6, ctx.n)));
