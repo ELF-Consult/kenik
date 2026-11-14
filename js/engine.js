@@ -17,7 +17,18 @@
     if (o && o.noAccent) s = strip(s);
     return s;
   }
-  OK.alts = s => String(s).split(/\s*[,/;]\s*/).map(x => x.trim()).filter(Boolean);
+  /* alternatieven: "a, b" of "a / b" zijn allebei juist; iets tussen haakjes is optioneel: "un jeu (des jeux)" -> un jeu, des jeux, un jeu (des jeux) */
+  OK.alts = s => {
+    const out = [];
+    String(s).split(/\s*[,/;]\s*/).map(x => x.trim()).filter(Boolean).forEach(a => {
+      out.push(a);
+      if (/[()]/.test(a)) {
+        const without = a.replace(/\s*\([^)]*\)\s*/g, " ").replace(/\s+/g, " ").trim(); if (without) out.push(without);
+        (a.match(/\(([^)]*)\)/g) || []).forEach(m => { const inner = m.slice(1, -1).trim(); if (inner) out.push(inner); });
+      }
+    });
+    return [...new Set(out)];
+  };
   function parseNum(s) {
     s = String(s).trim().replace(/\s/g, "").replace(",", ".");
     if (/^-?\d+\/\d+$/.test(s)) { const [a, b] = s.split("/").map(Number); return b ? a / b : NaN; }
