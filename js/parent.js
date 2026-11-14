@@ -595,7 +595,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
   /* kind (naam en leerjaar) -> foto -> nakijken -> tegen wanneer -> doorgeven. Alles krijgt een standaardwaarde;
      wat een ouder zelden aanpast (aantal vragen, toets, bonus) zit achter "Meer opties". */
   let wz = null;
-  const WZ_N = { kid: 1, ready: 0, what: 0, who: 1, photo: 2, type: 2, phone: 2, reading: 2, review: 3, when: 4, done: 0 };
+  const WZ_N = { kid: 1, ready: 0, what: 0, gen: 2, who: 1, photo: 2, type: 2, phone: 2, reading: 2, review: 3, when: 4, done: 0 };
   const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
   const localISO = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const wzHead = (title, sub) => el("div", "stack wz-head", `<h1>${esc(title)}</h1>${sub ? `<p class="muted">${esc(sub)}</p>` : ""}`);
@@ -603,7 +603,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
   OK.openWizardNewKid = function () { wz = { child: null, step: null, hist: [], items: [], verbs: [], name: "", subject: "Frans", listId: null, taskId: null }; OK.show("s-wizard"); wzGo("kid"); };
   OK.openWizard = function (childId, opts) {
     const kids = S().children; opts = opts || {};
-    wz = { child: childId || (kids.length === 1 ? kids[0].id : null), step: null, hist: [], items: [], verbs: [], name: "", subject: "Frans", listId: null, taskId: null, task: !!opts.task };
+    wz = { child: childId || (kids.length === 1 ? kids[0].id : null), step: null, hist: [], items: [], verbs: [], name: "", subject: "Frans", listId: null, taskId: null, task: !!opts.task, module: null, config: null };
     OK.show("s-wizard"); wzGo(!kids.length ? "kid" : wz.child ? (wz.task ? "what" : "photo") : "who");
   };
   function wzGo(step, noHist) {
@@ -692,11 +692,36 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     /* opdracht klaarzetten: uit het handboek (foto) of een oefening die Kenik al heeft (tafels, klok, ...) */
     what(body) {
       const c = wzChild();
-      body.appendChild(wzHead(`Wat moet ${esc(c.name)} kennen?`));
-      const two = el("div", "choice2");
-      const a = el("button", "photo-drop", `<span class="photo-ico">${ICO_CAM}</span><strong>Uit het handboek</strong><span class="muted small">Woordjes, begrippen of vervoegingen van een foto</span>`); a.type = "button"; a.addEventListener("click", () => wzGo("photo"));
-      const b = el("button", "photo-drop", `<span class="photo-ico">${ICO_GEN}</span><strong>Een oefening van Kenik</strong><span class="muted small">Tafels, kloklezen, spelling, breuken, ...</span>`); b.type = "button"; b.addEventListener("click", () => { const cid = c.id; wz = null; OK.openParent("stof", "tasks"); const sel = $("t-child"); if (sel) { sel.value = cid; sel.dispatchEvent(new Event("change")); } });
-      two.append(a, b); body.appendChild(two);
+      body.appendChild(wzHead(`Wat moet ${esc(c.name)} kennen?`, `Kies een oefening, of maak een lijst van een foto uit het handboek.`));
+      /* de oefeningen die bij dit kind aan staan, per vak; de ouder kiest hier meteen wat er geoefend moet worden */
+      const mods = Object.values(OK.modules).filter(m => c.modules[m.id]);
+      const groups = {}; mods.forEach(m => { (groups[m.group] = groups[m.group] || []).push(m); });
+      Object.entries(groups).forEach(([g, ms]) => {
+        body.appendChild(el("h3", "wz-group", esc(g)));
+        const grid = el("div", "wz-mods");
+        ms.forEach(m => { const t = el("button", "opt-row", `<span>${esc(m.name)}</span><span class="muted small">${esc(m.describe ? m.describe(c.modules[m.id] || {}, { child: c }) : "")}</span>`); t.type = "button"; t.addEventListener("click", () => { wz.module = m.id; wz.config = null; wzGo((m.schema || []).length ? "gen" : "when"); }); grid.appendChild(t); });
+        body.appendChild(grid);
+      });
+      if (!mods.length) body.appendChild(el("p", "muted small", `Bij ${esc(c.name)} staat nog geen oefening aan. Zet er een aan via Meer › Kinderen › Instellen, of maak een lijst van een foto.`));
+      body.appendChild(el("h3", "wz-group", "Uit het handboek"));
+      const a = el("button", "opt-row", `<span>${ICO_CAM.replace('width="36" height="36"', 'width="24" height="24"')} Lijst maken van een foto</span><span class="muted small">Woordjes, begrippen, vervoegingen</span>`); a.type = "button"; a.addEventListener("click", () => wzGo("photo"));
+      body.appendChild(a);
+    },
+    /* instellingen van de gekozen oefening (bv. welke tafels, welke spellingregels) */
+    gen(body) {
+      const c = wzChild(), m = OK.modules[wz.module]; if (!m) { wzGo("what", true); return; }
+      body.appendChild(wzHead(m.name, `Wat precies moet ${esc(c.name)} hiervan kennen?`));
+      const fields = el("div", "stack"); body.appendChild(fields);
+      const cfg = wz.config || c.modules[m.id] || (m.defaultsFor && m.defaultsFor(c.grade, OK.region())) || {};
+      (m.schema || []).forEach(f => fields.appendChild(OK.fieldEditor(f, cfg[f.key], c, "task")));
+      const next = el("button", "btn big wide", "Verder"); next.type = "button"; body.appendChild(next);
+      next.addEventListener("click", () => {
+        const out = {}; let emptyList = false;
+        (m.schema || []).forEach(f => { const v = OK.readField(f, fields); if (v !== undefined) out[f.key] = v; if ((f.type === "lists" || f.type === "packs") && Array.isArray(v) && !v.length) emptyList = true; });
+        if (emptyList) { OK.toast("Kies eerst welke lijst(en) de opdracht omvat.", true); return; }
+        if (m.normalize) m.normalize(out);
+        wz.config = out; wzGo("when");
+      });
     },
     /* foto eerst: geen naam, vak of instelling vooraf */
     photo(body) {
@@ -801,8 +826,8 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     },
     /* één vraag die de opdracht aanmaakt */
     when(body) {
-      const c = wzChild(), l = wzList(); if (!l) { wzGo("photo", true); return; }
-      body.appendChild(wzHead(`Tegen wanneer moet ${c.name} dit kennen?`, `${l.name}, ${l.items.length} ${l.pack || (l.lang && l.lang !== "nl") ? "woorden" : "vragen"}`));
+      const c = wzChild(), l = wzList(), gm = wz.module ? OK.modules[wz.module] : null; if (!l && !gm) { wzGo("what", true); return; }
+      body.appendChild(wzHead(`Tegen wanneer moet ${c.name} dit kennen?`, l ? `${l.name}, ${l.items.length} ${l.pack || (l.lang && l.lang !== "nl") ? "woorden" : "vragen"}` : `${gm.name}${gm.describe ? ": " + gm.describe(wz.config || {}, { child: c }) : ""}`));
       let due; const opts = el("div", "stack wz-opts");
       const next = el("button", "btn big wide", "Klaarzetten"); next.type = "button"; next.disabled = true;
       const pick = (b, v) => { due = v; opts.querySelectorAll(".opt-row").forEach(x => x.classList.toggle("sel", x === b)); next.disabled = v === undefined; };
@@ -821,9 +846,12 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
       next.addEventListener("click", () => {
         if (due === undefined) return;
         if (wz.taskId) S().tasks = S().tasks.filter(t => t.id !== wz.taskId);
-        const module = l.pack ? "spelling" : "lijsten", m = OK.modules[module];
-        const config = l.pack ? { types: ["dictee", "kies"], packs: [], own: [l.id] } : { lists: [l.id], dir: "q-a" };
-        if (!c.modules[module]) c.modules[module] = (!l.pack ? null : m.defaultsFor && m.defaultsFor(c.grade, OK.region())) || (l.pack ? { types: ["dictee", "kies"], packs: [], own: "all" } : { lists: [l.id], dir: "q-a" });
+        let module, config;
+        if (l) {
+          module = l.pack ? "spelling" : "lijsten"; const m = OK.modules[module];
+          config = l.pack ? { types: ["dictee", "kies"], packs: [], own: [l.id] } : { lists: [l.id], dir: "q-a" };
+          if (!c.modules[module]) c.modules[module] = (!l.pack ? null : m.defaultsFor && m.defaultsFor(c.grade, OK.region())) || (l.pack ? { types: ["dictee", "kies"], packs: [], own: "all" } : { lists: [l.id], dir: "q-a" });
+        } else { module = wz.module; config = wz.config || {}; }
         const t = { id: OK.uid(), child: c.id, module, config, mode: "practice", count: +$("wz-count").value, due: due || null, bonus: Math.max(0, +$("wz-bonus").value || 0), status: "open", created: OK.nowISO() };
         S().tasks.push(t); wz.taskId = t.id; OK.save(); wzGo("done");
       });
@@ -832,7 +860,7 @@ Antwoord met enkel JSON: {"title": "korte titel", "text": "de tekst met \\n\\n t
     done(body) {
       const c = wzChild(), l = wzList(), t = S().tasks.find(x => x.id === wz.taskId);
       body.appendChild(el("span", "done-ico", `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 l4.5 4.5 l9.5 -10"/></svg>`));
-      body.appendChild(wzHead(`Klaar. Nu is het aan ${c.name}.`, `${l ? l.name : "De leerstof"} staat klaar${t && t.due ? " " + OK.dueText(t).toLowerCase() : ""}. Waar gaat ${c.name} oefenen?`));
+      body.appendChild(wzHead(`Klaar. Nu is het aan ${c.name}.`, `${l ? l.name : (wz.module && OK.modules[wz.module] ? OK.modules[wz.module].name : "De leerstof")} staat klaar${t && t.due ? " " + OK.dueText(t).toLowerCase() : ""}. Waar gaat ${c.name} oefenen?`));
       const here = el("button", "way primary", `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5 h3"/></svg><span><strong>Op dit toestel</strong><span class="small">Geef het door, ${esc(c.name)} kan meteen starten</span></span>`); here.type = "button";
       const there = el("button", "way", `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1"/><rect x="14" y="3.5" width="6.5" height="6.5" rx="1"/><rect x="3.5" y="14" width="6.5" height="6.5" rx="1"/><path d="M14 14 h3 v3 M20.5 14 v6.5 h-6.5 v-0.5"/></svg><span><strong>Op een ander toestel</strong><span class="small muted">Toon een QR-code om te scannen</span></span>`); there.type = "button";
       const extra = el("div", "stack"); body.append(here, there, extra);
