@@ -26,6 +26,7 @@
   }
   OK.openParent = function (main, tab) { OK.show("s-parent"); showMain(main || "home", tab); paintKidSwitch(); };
   /* de knop naar de kindkant toont de kinderen zelf (max 3 avatars) */
+  OK.paintKidSwitch = paintKidSwitch;
   function paintKidSwitch() { const b = $("kidswitch-avs"); if (!b) return; b.innerHTML = S().children.slice(0, 3).map(c => OK.avatarHTML(c)).join(""); $("btn-parent-exit").classList.toggle("hidden", !S().children.length); }
   /* Beheer: knop in de kop, enkel voor beheerders */
   let adminKnown = null;
@@ -136,6 +137,7 @@
     box.appendChild(el("div", "stack", `<p class="muted small">Op een gezinstoestel kiezen de kinderen gewoon hun naam. Op een ander toestel (laptop, tablet bij oma, klascomputer) opent het kind de app, kiest "Ik ben een kind" en scant de QR of typt de code die je bij het kind vindt onder Kinderen, knop "Ander toestel". Daar zie je ook op welke toestellen elk kind aangemeld is en kan je er een afmelden.</p>`));
   }
   function renderKids() {
+    paintKidSwitch();
     const box = $("ptab-kids"); box.innerHTML = "";
     if (editing) { const c = OK.childById(editing); if (c) { box.appendChild(childEditor(c)); return; } editing = null; }
     box.appendChild(el("h3", null, "Kinderen"));

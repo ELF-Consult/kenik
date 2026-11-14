@@ -203,6 +203,18 @@ grant insert, update on child_progress to child;
 
 alter function jwt_child_id() set search_path = public;
 alter function is_child(uuid) set search_path = public;
+-- e-mailadressen van de ouders in het eigen gezin (auth.users is niet rechtstreeks leesbaar vanuit de client)
+create or replace function family_parents(fam uuid)
+returns table(user_id uuid, email text, role text, joined_at timestamptz)
+language sql stable security definer set search_path = public as $$
+  select m.user_id, u.email::text, m.role, m.joined_at
+  from family_members m join auth.users u on u.id = m.user_id
+  where m.family_id = fam and is_parent_of(fam)
+  order by m.joined_at;
+$$;
+revoke execute on function family_parents(uuid) from public, anon;
+grant execute on function family_parents(uuid) to authenticated;
+
 revoke execute on function create_family(text) from public, anon;
 revoke execute on function accept_invites() from public, anon;
 revoke execute on function complete_task(uuid, text, text) from public, anon, authenticated;

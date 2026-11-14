@@ -258,7 +258,7 @@ details>summary{cursor:pointer}
 .whobadge .who-sub{font-weight:600;font-size:12px;color:var(--fg2)}
 .whobadge .who-sub:empty{display:none}
 .whobadge .avatar{flex:0 0 auto}
-.avatar.emo{background-image:none;font-size:22px}
+.avatar.emo{background-image:none;font-size:28px;line-height:1}
 .avpick{display:flex;flex-wrap:wrap;gap:8px}
 .avopt{width:48px;height:48px;border-radius:12px;border:2px solid var(--line);background:var(--bg2);font-size:26px;display:grid;place-items:center;cursor:pointer;padding:0}
 .avopt.sel{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 18%,transparent)}
@@ -496,8 +496,9 @@ table.review .x{background:transparent;color:var(--fg2);font-size:18px;min-width
 .kidswitch:hover svg{transform:translateX(2px)}
 .kidswitch svg{color:var(--link);transition:transform .15s}
 .kidswitch-avs{display:flex}
-.kidswitch-avs .avatar{width:32px;height:32px;font-size:14px;border:2px solid var(--card);margin-left:-10px}
+.kidswitch-avs .avatar{width:32px;height:32px;font-size:14px;overflow:hidden;border:2px solid var(--card);margin-left:-10px}
 .kidswitch-avs .avatar:first-child{margin-left:0}
+.kidswitch-avs .avatar.emo{font-size:20px}
 /* + tegel bij "Wie ben jij?" (enkel als een ouder ingelogd is) */
 .player-add{border-style:dashed;background:transparent}
 .avatar.add{background:transparent;border:2px dashed var(--link);color:var(--link);font-size:26px;font-weight:700}

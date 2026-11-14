@@ -553,7 +553,7 @@
      De vraag "gezinstoestel of niet" komt pas wanneer de ouder het toestel aan een kind geeft. */
   function afterParentLogin(email) { OK.setSession({ type: "parent", email, since: OK.nowISO() }); if (S().children.length) OK.openParent(); else OK.openWizard(); }
   OK.onParentAuthed = email => { if (OK.session() && OK.session().type !== "child") return; afterParentLogin(email); };
-  OK.onRemoteChange = () => { const cur = ["s-home", "s-who", "s-parent"].find(id => !$(id).classList.contains("hidden")); if (cur === "s-home" && OK.child()) renderHome(); else if (cur === "s-who") renderWho(); };
+  OK.onRemoteChange = () => { if (OK.paintKidSwitch) OK.paintKidSwitch(); const cur = ["s-home", "s-who", "s-parent"].find(id => !$(id).classList.contains("hidden")); if (cur === "s-home" && OK.child()) renderHome(); else if (cur === "s-who") renderWho(); };
   async function childLoginWith(code) {
     const r = await OK.backend.childLogin(code); if (r.error) { $("land-child-msg").textContent = r.error; return false; }
     OK.setSession({ type: "child", child: r.child, device: r.device, since: OK.nowISO() }); S().current = r.child; OK.save(); renderHome(); return true;

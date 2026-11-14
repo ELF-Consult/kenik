@@ -70,11 +70,11 @@ window.OK = window.OK || {};
   /* Helpers rond kinderen */
   OK.child = () => S.children.find(c => c.id === S.current) || null;
   /* avatar: gekozen icoontje (emoji) of de eerste letter; kleur per kind. Later kan hier een foto bij. */
-  const AV_COLORS = ["#5b8cff", "#3ddc97", "#ff8a1f", "#c06bff", "#ff5d7a", "#2fc4d8"];
-  OK.AVATARS = ["🐶", "🐱", "🦊", "🐼", "🦄", "🐸", "🐯", "🦁", "🐧", "🦖", "🐙", "🦋", "🚀", "⚽", "🎸", "🌈", "🏰", "🐴"];
+  const AV_COLORS = ["#5b8cff", "#3ddc97", "#ff8a1f", "#c06bff", "#ff5d7a", "#2fc4d8", "#ffc93c", "#f28bb8", "#7c5cff", "#00a37a", "#e63946", "#8d6e63", "#4b5563", "#1f3a93"];
+  OK.AVATARS = ["🐶", "🐱", "🦊", "🐼", "🐘", "🦁", "🐯", "🐨", "🐰", "🦒", "🐵", "🐻", "🐷", "🐸", "🦄", "🐧", "🦉", "🐢", "🐬", "🦈", "🐙", "🦋", "🐞", "🦓", "🦖", "🐴", "🚀", "⚽", "🎸", "🌈", "🏰", "🎨"];
   OK.avatarColors = AV_COLORS;
   OK.avatarColor = c => c.color || AV_COLORS[Math.max(0, S.children.indexOf(c)) % AV_COLORS.length];
-  OK.avatarHTML = (c, size) => { const bg = OK.avatarColor(c); return `<div class="avatar${c.avatar ? " emo" : ""}" style="background:${bg}${size ? `;width:${size}px;height:${size}px;font-size:${Math.round(size * .5)}px` : ""}">${c.avatar || String(c.name || "?")[0].toUpperCase()}</div>`; };
+  OK.avatarHTML = (c, size) => { const bg = OK.avatarColor(c); return `<div class="avatar${c.avatar ? " emo" : ""}" style="background:${bg}${size ? `;width:${size}px;height:${size}px;font-size:${Math.round(size * (c.avatar ? .64 : .5))}px` : ""}">${c.avatar || String(c.name || "?")[0].toUpperCase()}</div>`; };
   OK.childById = id => S.children.find(c => c.id === id) || null;
   OK.childName = id => id === "all" ? "iedereen" : ((OK.childById(id) || {}).name || "?");
   OK.forChild = (thing, childId) => thing.children === "all" || !thing.children || thing.children.includes(childId);
