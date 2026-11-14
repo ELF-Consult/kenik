@@ -497,3 +497,45 @@ table.review .x{background:transparent;color:var(--fg2);font-size:18px;min-width
 .player-add{border-style:dashed;background:transparent}
 .avatar.add{background:transparent;border:2px dashed var(--link);color:var(--link);font-size:26px;font-weight:700}
 .player-add strong{color:var(--link)}
+
+/* ---- de wereld van het kind (tuin, kasteel, dinoland, ruimte): teruggezet, bovenop de coins ---- */
+.garden{position:relative;border-radius:var(--r);overflow:hidden;min-height:230px;border:5px solid #fff;box-shadow:0 10px 30px rgba(40,60,20,.18);
+  background:linear-gradient(var(--sky,#bfe6ff) 0 55%,var(--grass,#8ad46c) 55% 100%)}
+.garden .backdrop{position:absolute;left:0;right:0;top:0;width:100%;height:62%;display:block}
+.garden .sun{position:absolute;top:14px;right:22px;width:64px;height:64px;border-radius:50%;background:#ffc93c;box-shadow:0 0 0 10px rgba(255,201,60,.35),0 0 0 22px rgba(255,201,60,.15)}
+.garden.space .sun{background:#fff;width:40px;height:40px;box-shadow:0 0 30px 10px rgba(255,255,255,.4)}
+.garden .cloud{position:absolute;background:#fff;border-radius:999px;opacity:.9}
+.garden .cloud::before,.garden .cloud::after{content:"";position:absolute;background:#fff;border-radius:50%}
+.garden .c1{left:8%;top:22px;width:90px;height:30px}.garden .c1::before{left:16px;top:-16px;width:40px;height:40px}.garden .c1::after{left:44px;top:-10px;width:32px;height:32px}
+.garden .c2{left:45%;top:40px;width:70px;height:24px}.garden .c2::before{left:12px;top:-12px;width:30px;height:30px}.garden .c2::after{left:34px;top:-8px;width:26px;height:26px}
+.garden.space .cloud{display:none}
+.grow{position:absolute;left:0;right:0;bottom:50px;height:120px;display:flex;align-items:flex-end;justify-content:center;gap:2%;padding:0 3%}
+.grow .g{width:7%;max-width:56px;min-width:26px;transform-origin:50% 100%;animation:grow .7s cubic-bezier(.3,1.6,.5,1) both}
+.grow .g.seed{animation:none;opacity:.3;transform:scale(.5)}
+.grow .g svg{width:100%;display:block}
+@keyframes grow{from{transform:scale(0)}to{transform:scale(1)}}
+.friends{position:absolute;left:0;right:0;bottom:4px;height:70px;display:flex;align-items:flex-end;gap:0;padding:0 10px;overflow:hidden}
+.friends .fr{width:70px;height:70px;flex:0 0 auto;animation:hop 1.6s ease-in-out infinite;transform-origin:50% 100%}
+.friends .fr:nth-child(2n){animation-delay:.4s}.friends .fr:nth-child(3n){animation-delay:.9s}
+.friends .fr svg{width:100%;height:100%}
+@keyframes hop{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.garden-label{position:absolute;left:12px;top:10px;background:rgba(255,255,255,.85);border-radius:999px;padding:6px 14px;font-size:14px;color:#7a655b}
+.overlay{position:fixed;inset:0;background:rgba(20,15,10,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
+.ocard{background:var(--card);border-radius:28px;padding:28px;max-width:440px;width:100%;text-align:center;border:6px solid #fff;animation:grow .6s cubic-bezier(.3,1.6,.5,1) both;color:var(--fg)}
+.ocard .big-fig{width:160px;height:160px;margin:0 auto}
+.ocard .big-fig svg{width:100%;height:100%}
+.playgrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:-4px 0 4px}
+.pg-row{display:flex;align-items:flex-end;gap:4px;height:34px}
+.pg{width:22px;transform-origin:50% 100%}
+.pg svg{width:100%;display:block}
+.pg.seed{opacity:.3;transform:scale(.55)}
+.pg.pop{animation:grow .7s cubic-bezier(.3,1.6,.5,1) both}
+.pg-text{font-size:13px;color:var(--fg2)}
+.garden{margin-bottom:0}
+.garden .world-switch{position:absolute;right:12px;top:10px;z-index:3;background:rgba(255,255,255,.85);border:0;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;color:var(--fg);cursor:pointer}
+.world-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.world-pick button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px;border-radius:14px;border:2px solid var(--line);background:#fff;color:var(--fg);font-weight:700;cursor:pointer}
+.world-pick button.sel{border-color:var(--link);background:var(--blue-bg)}
+.world-pick .fig{width:64px;height:64px}
+.world-pick .fig svg{width:100%;height:100%}
+.ocard .big-fig:empty{display:none}

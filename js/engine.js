@@ -136,7 +136,7 @@
         s.locked = true;
         const st = OK.stat(child.id, q.key); st.ok++; st.lastOk = s.tries === 0; st.t = Math.round(st.t * 0.6 + (Date.now() - s.t0) * 0.4); st.last = Date.now();
         let pts = s.mode === "test" ? 0 : (s.tries === 0 ? set.p1 : set.p2), streakBonus = 0, goalBonus = 0;
-        if (s.mode !== "test") { child.streak++; child.best = Math.max(child.best, child.streak); if (child.streak % 5 === 0) { streakBonus = 10; pts += 10; } }
+        if (s.mode !== "test") { child.streak++; child.best = Math.max(child.best, child.streak); if (child.streak % 5 === 0) { streakBonus = 10; pts += 10; } child.garden = child.garden || { flowers: 0, collected: [] }; child.garden.flowers++; /* één groei-item in de wereld */ }
         const before = OK.todayCount(child.id);
         OK.logExercise(child.id, pts);
         if (s.mode !== "test" && before + 1 === set.goal && set.goalBonus) { OK.addPoints(child.id, set.goalBonus, "dagdoel"); goalBonus = set.goalBonus; }

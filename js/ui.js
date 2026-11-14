@@ -72,6 +72,50 @@
   function scorePct(t) { const m = /^(\d+)\/(\d+)$/.exec(t.score || ""); return m && +m[2] ? +m[1] / +m[2] * 100 : (t.score ? 0 : 100); }
   function recentDone(c) { const since = Date.now() - 7 * 864e5; return S().tasks.filter(t => t.status === "done" && t.doneAt && new Date(t.doneAt) > since && (t.doneBy === c.id || t.child === c.id) && OK.modules[t.module] && !t.tested && scorePct(t) >= 90).sort((a, b) => b.doneAt.localeCompare(a.doneAt)); }
   function startProef(t) { t.tested = true; OK.save(); startSession({ moduleId: t.module, config: t.config, mode: "test", count: t.count, taskId: null }); }
+  /* ---------- de wereld van het kind: één groei-item per juist antwoord, een vriendje per 10 ---------- */
+  function renderGarden(c) {
+    const g = $("garden"); if (!g) return; c.garden = c.garden || { flowers: 0, collected: [] }; const v = OK.variantOf(c);
+    g.className = "garden scene-" + v.scene; g.classList.remove("hidden");
+    const sc = OK.scenes[v.scene]; g.style.setProperty("--sky", sc.sky[0]); g.style.setProperty("--grass", sc.ground[0]);
+    const inRound = c.garden.flowers % 10;
+    let html = `<svg class="backdrop" viewBox="0 0 1000 170" preserveAspectRatio="xMidYMax slice">${OK.scenes[v.scene].svg}</svg>`;
+    /* 10 items worden ingeruild voor een vriendje: je ziet dus nooit meer dan 9 */
+    const nf = c.garden.collected.length, friendsTxt = nf ? ` · ${nf} ${nf === 1 ? v.friend : v.friends}` : "";
+    html += `<div class="garden-label">${inRound ? `${inRound} ${inRound === 1 ? v.item : v.items}${friendsTxt}` : (nf ? `Rij vol, nieuwe ${v.friend} erbij${friendsTxt}` : `Nog geen ${v.items}`)}</div>`;
+    html += `<button class="world-switch" type="button" id="btn-world">Andere wereld</button>`;
+    html += `<div class="grow">${Array.from({ length: 10 }, (_, i) => `<div class="g${i < inRound ? "" : " seed"}">${v.grow(OK.growColor(i))}</div>`).join("")}</div>`;
+    html += `<div class="friends">${c.garden.collected.map(i => `<div class="fr">${v.collect(i)}</div>`).join("")}</div>`;
+    g.innerHTML = html;
+    $("btn-world").addEventListener("click", () => pickWorld(c));
+  }
+  /* wereld kiezen: de verzameling blijft (dezelfde nummers, andere figuren) */
+  function pickWorld(c) {
+    const cur = (c.theme && c.theme.variant) || "hondjes";
+    const box = h("div", "world-pick");
+    Object.entries(OK.gardenVariants).forEach(([k, v]) => { const b = h("button"); b.type = "button"; if (k === cur) b.classList.add("sel"); b.innerHTML = `<div class="fig">${v.collect(0)}</div><span>${v.name}</span>`; b.addEventListener("click", () => { c.theme = { style: "kist", variant: k }; OK.save(); $("overlay").classList.add("hidden"); renderGarden(c); }); box.appendChild(b); });
+    $("overlay-fig").innerHTML = ""; $("overlay-title").textContent = "Kies je wereld"; const t = $("overlay-text"); t.innerHTML = ""; t.appendChild(box);
+    $("overlay").classList.remove("hidden");
+  }
+  /* tijdens het oefenen: rij van 10 die volloopt; bij 10 komt er een vriendje bij */
+  function renderPlayGrow(c, pulse) {
+    const box = $("play-grow"); if (!box) return; if (!sess || sess.mode === "test") { box.classList.add("hidden"); return; }
+    c.garden = c.garden || { flowers: 0, collected: [] }; const v = OK.variantOf(c); const n = c.garden.flowers % 10;
+    box.classList.remove("hidden");
+    box.innerHTML = `<div class="pg-row">${Array.from({ length: 10 }, (_, i) => `<div class="pg${i < n ? "" : " seed"}${pulse && i === n - 1 ? " pop" : ""}">${v.grow(OK.growColor(i))}</div>`).join("")}</div><span class="pg-text">${n === 0 && c.garden.flowers ? `10 ${v.items} vol: ${v.friend} erbij!` : `nog ${10 - n} ${10 - n === 1 ? v.item : v.items} tot een nieuwe ${v.friend}`}</span>`;
+  }
+  function celebrateIfNeeded(c) {
+    c.garden = c.garden || { flowers: 0, collected: [] }; const v = OK.variantOf(c);
+    const earned = Math.floor(c.garden.flowers / 10) - (c.garden.parties || 0);
+    if (earned <= 0) return;
+    c.garden.parties = (c.garden.parties || 0) + 1;
+    const remaining = Array.from({ length: v.count }, (_, i) => i).filter(i => !c.garden.collected.includes(i));
+    let idx, title, text;
+    if (remaining.length) { idx = OK.pick(remaining); c.garden.collected.push(idx); title = `Een nieuwe ${v.friend}!`; text = `${v.names[idx]} komt erbij. Je hebt nu ${c.garden.collected.length} ${c.garden.collected.length === 1 ? v.friend : v.friends}.`; }
+    else { idx = OK.pick(c.garden.collected); title = "Iedereen is er!"; text = `${v.names[idx]} en de anderen vieren feest. Wat een pracht van ${v.items}!`; }
+    OK.save();
+    $("overlay-fig").innerHTML = v.collect(idx); $("overlay-title").textContent = title; $("overlay-text").textContent = text;
+    $("overlay").classList.remove("hidden"); confetti();
+  }
   function renderProef(c) {
     const box = $("proef-card"); if (!box) return; box.innerHTML = ""; const done = recentDone(c).slice(0, 3); box.classList.toggle("hidden", !done.length); if (!done.length) return;
     box.appendChild(h("h3", null, "Proeftoets"));
@@ -82,7 +126,7 @@
     const c = OK.child(); if (!c) { renderWho(); return; }
     if (OK.syncVerbsFromLists) OK.syncVerbsFromLists(c);
     const tasks = openTasks(c);
-    renderHero(c, tasks[0]); renderTodo(c, tasks.slice(1)); renderProef(c);
+    renderHero(c, tasks[0]); renderTodo(c, tasks.slice(1)); renderProef(c); renderGarden(c);
     const goal = renderGoal($("goal-card"), c); $("btn-shop").classList.toggle("hidden", goal);
     const pb = $("practice-btns"); pb.innerHTML = "";
     const mods = enabledModules(c).sort((a, b) => (a.order || 50) - (b.order || 50));
@@ -289,7 +333,7 @@
   }
   function showQ() {
     const q = sess.current(); if (!q) { finish(); return; }
-    sess.start(); hideSheet();
+    sess.start(); renderPlayGrow(OK.child(), false); hideSheet();
     $("play-progress").textContent = `${sess.i + 1} / ${sess.qs.length}`; $("play-bar").style.width = (sess.i / sess.qs.length * 100) + "%";
     const p = q.prompt || {}; let html = p.meta ? `<span class="meta">${p.meta}</span>` : "";
     if (p.main) html += p.main;
@@ -393,7 +437,7 @@
     if (given === undefined) { const a = $("answer"); if (!a) return null; given = a.value.trim(); if (!given) return null; if (q.stripPron) given = given.replace(/^(je|j'|tu|il|elle|on|nous|vous|ils|elles)\s*'?\s*/i, ""); }
     const res = sess.answer(given); const fb = $("feedback");
     if (res.status === "ok") {
-      fb.textContent = ""; fb.className = "feedback"; $("hint").classList.add("hidden");
+      fb.textContent = ""; fb.className = "feedback"; $("hint").classList.add("hidden"); renderPlayGrow(OK.child(), true);
       let body = res.r.exact ? "" : `<p>${esc(res.r.note)}</p>`;
       if (q.explain && (sess.tries > 0 || q.kind === "number" && /:/.test(q.prompt.main || ""))) body += `<div class="sheet-explain">${q.explain}</div>`;
       const pts = (res.pts || 0) + (res.goalBonus || 0);
@@ -435,6 +479,7 @@
     if (r.wrong.length) list.appendChild(h("p", "muted small", "Nog eens bekijken:"));
     r.wrong.forEach(x => { const d = h("div", "item"); const q = x.q; const left = h("span"); left.appendChild(h("span", null, (q.prompt.main || q.prompt.meta || "").replace(/<[^>]+>/g, ""))); left.appendChild(h("span", "muted small", x.ok ? "  (pas de tweede keer juist)" : x.given ? `  (jij zei ${x.given})` : "  (overgeslagen)")); d.appendChild(left); d.appendChild(h("strong", null, OK.display(q))); list.appendChild(d); });
     renderGoal($("result-goal"), c);
+    if (mode !== "test") setTimeout(() => celebrateIfNeeded(c), 400);
     /* grote knop: de volgende opdracht als er nog een klaarstaat, anders terug naar het startscherm */
     const nxt = openTasks(c).find(t => t.id !== (lastOpts && lastOpts.taskId)); const nb = $("btn-result-next"); nb.textContent = nxt ? "Volgende: " + OK.taskTitle(nxt) : "Klaar"; nb.onclick = () => nxt ? startTask(nxt) : renderHome();
     $("btn-again").textContent = p && !r.taskDone ? `Nog een beurt (nog ${p.total - p.known} te gaan)` : "Nog een beurt";
@@ -443,6 +488,7 @@
   }
   $("btn-again").addEventListener("click", () => { if (lastOpts) { const o = Object.assign({}, lastOpts); if (o.taskId) { const t = S().tasks.find(x => x.id === o.taskId); if (!t || t.status !== "open") delete o.taskId; } startSession(o); } });
 
+  $("btn-overlay-ok").addEventListener("click", () => { $("overlay").classList.add("hidden"); if (OK.child() && !$("s-home").classList.contains("hidden")) renderGarden(OK.child()); });
   function confetti() { const c = $("confetti"); c.innerHTML = ""; const cols = ["#ffb830", "#2f5be0", "#1a7d52", "#b35c00", "#6a43c4", "#f3b61f"]; for (let i = 0; i < 60; i++) { const s = document.createElement("i"); s.style.left = Math.random() * 100 + "%"; s.style.background = cols[i % 6]; s.style.animationDelay = Math.random() * .8 + "s"; s.style.animationDuration = 1.8 + Math.random() * 1.4 + "s"; c.appendChild(s); } setTimeout(() => { c.innerHTML = ""; }, 3500); }
 
   /* ---------- winkel ---------- */

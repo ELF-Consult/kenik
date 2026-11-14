@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#f5f6f8">
 <title>Kenik</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap">
-<link rel="stylesheet" href="css/app.css?v=2026.11.14-1">
+<link rel="stylesheet" href="css/app.css?v=2026.11.14-2">
 </head>
 <body>
 
@@ -61,6 +61,7 @@
       <div class="list" id="todo-list"></div>
     </div>
     <div class="card stack hidden" id="proef-card"></div>
+    <section class="garden hidden" id="garden"></section>
     <div class="card stack hidden" id="goal-card"></div>
     <details class="card" id="practice-card">
       <summary><h3 id="practice-title">Iets anders oefenen</h3></summary>
@@ -87,6 +88,7 @@
       <div class="bar"><i id="play-bar"></i></div>
       <span class="muted small" id="play-progress"></span>
     </div>
+    <div class="playgrow hidden" id="play-grow"></div>
     <div class="card stack qcard">
       <span class="tag hidden" id="play-mode"></span>
       <div class="q" id="question"></div>
@@ -164,31 +166,40 @@
   </section>
 </div>
 
+<div class="overlay hidden" id="overlay">
+  <div class="ocard">
+    <div class="big-fig" id="overlay-fig"></div>
+    <h2 id="overlay-title"></h2>
+    <p id="overlay-text"></p>
+    <div class="row" style="justify-content:center;margin-top:18px"><button class="btn big" id="btn-overlay-ok" type="button">Verder</button></div>
+  </div>
+</div>
 <div class="confetti" id="confetti"></div>
 
-<script src="js/state.js?v=2026.11.14-1"></script>
-<script src="js/i18n.js?v=2026.11.14-1"></script>
+<script src="js/state.js?v=2026.11.14-2"></script>
+<script src="js/themes.js?v=2026.11.14-2"></script>
+<script src="js/i18n.js?v=2026.11.14-2"></script>
 <!-- echte backend: alleen actief op de eigen site, als config.js bestaat (zie README-deploy.md) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="config.js?v=2026.11.14-1"></script>
-<script src="js/backend-supabase.js?v=2026.11.14-1"></script>
-<script src="js/auth.js?v=2026.11.14-1"></script>
+<script src="config.js?v=2026.11.14-2"></script>
+<script src="js/backend-supabase.js?v=2026.11.14-2"></script>
+<script src="js/auth.js?v=2026.11.14-2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="js/engine.js?v=2026.11.14-1"></script>
-<script src="js/content/lists.js?v=2026.11.14-1"></script>
-<script src="js/content/frans.js?v=2026.11.14-1"></script>
-<script src="js/content/engels.js?v=2026.11.14-1"></script>
-<script src="js/content/rekenen.js?v=2026.11.14-1"></script>
-<script src="js/content/kaart.js?v=2026.11.14-1"></script>
-<script src="js/content/meetkunde.js?v=2026.11.14-1"></script>
-<script src="js/content/ordenen.js?v=2026.11.14-1"></script>
-<script src="js/content/taal.js?v=2026.11.14-1"></script>
-<script src="js/ai.js?v=2026.11.14-1"></script>
-<script src="js/parent.js?v=2026.11.14-1"></script>
-<script src="js/admin.js?v=2026.11.14-1"></script>
-<script src="js/ui.js?v=2026.11.14-1"></script>
+<script src="js/engine.js?v=2026.11.14-2"></script>
+<script src="js/content/lists.js?v=2026.11.14-2"></script>
+<script src="js/content/frans.js?v=2026.11.14-2"></script>
+<script src="js/content/engels.js?v=2026.11.14-2"></script>
+<script src="js/content/rekenen.js?v=2026.11.14-2"></script>
+<script src="js/content/kaart.js?v=2026.11.14-2"></script>
+<script src="js/content/meetkunde.js?v=2026.11.14-2"></script>
+<script src="js/content/ordenen.js?v=2026.11.14-2"></script>
+<script src="js/content/taal.js?v=2026.11.14-2"></script>
+<script src="js/ai.js?v=2026.11.14-2"></script>
+<script src="js/parent.js?v=2026.11.14-2"></script>
+<script src="js/admin.js?v=2026.11.14-2"></script>
+<script src="js/ui.js?v=2026.11.14-2"></script>
 <!-- versie: bij elke publicatie verhogen, zo zie je op elk toestel welke versie er draait -->
-<div class="version" title="Versie van de site">v2026.11.14-1</div>
+<div class="version" title="Versie van de site">v2026.11.14-2</div>
 
 </body>
 </html>
