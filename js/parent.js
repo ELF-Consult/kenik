@@ -223,35 +223,11 @@
   /* ---------- opdrachten ---------- */
   function renderTasks() {
     const box = $("ptab-tasks"); box.innerHTML = "";
-    box.appendChild(el("h3", null, "Nieuwe opdracht"));
-    box.appendChild(el("p", "muted small", "Een opdracht verschijnt bovenaan op het startscherm van het kind. De instellingen liggen vast; afwerken levert de bonus op."));
     const kids = S().children;
-    const row1 = el("div", "row", `<label class="f">Voor wie<select id="t-child">${kids.map(k => `<option value="${k.id}" ${k.id === S().current ? "selected" : ""}>${esc(k.name)}</option>`).join("")}</select></label><label class="f">Welke oefening (klap open voor alle vakken)<select id="t-module"></select></label>`);
-    box.appendChild(row1);
-    const fields = el("div", "stack"); box.appendChild(fields);
-    const row2 = el("div", "row", `<label class="f" id="t-count-wrap" style="max-width:160px">Aantal vragen<select id="t-count"><option>10</option><option selected>15</option><option>20</option><option>30</option></select></label><label class="f" style="max-width:180px">Tegen wanneer<input type="date" id="t-due"></label><label class="f" style="max-width:140px">Bonus (coins)<input type="number" id="t-bonus" min="0" value="50"></label>`);
-    const addBtn = el("button", "btn", "Opdracht geven"); addBtn.type = "button"; row2.appendChild(addBtn); box.appendChild(row2);
-    const msg = el("p", "muted small"); box.appendChild(msg);
-    const modSel = row1.querySelector("#t-module");
-    function fillModules() {
-      const cid = row1.querySelector("#t-child").value; const child = cid === "all" ? null : OK.childById(cid);
-      const mods = Object.values(OK.modules).filter(m => !child || child.modules[m.id]);
-      const groups = {}; mods.forEach(m => { (groups[m.group] = groups[m.group] || []).push(m); });
-      modSel.innerHTML = Object.entries(groups).map(([g, ms]) => `<optgroup label="${esc(g)}">${ms.map(m => `<option value="${m.id}">${esc(m.name)}</option>`).join("")}</optgroup>`).join(""); fillFields();
-    }
-    function fillFields() {
-      fields.innerHTML = ""; const m = OK.modules[modSel.value]; if (!m) return;
-      const cid = row1.querySelector("#t-child").value; const child = cid === "all" ? (kids[0] || { id: "x", modules: {} }) : OK.childById(cid);
-      const cfg = (child && child.modules[m.id]) || (m.defaultsFor && m.defaultsFor(child ? child.grade : 6)) || {};
-      (m.schema || []).forEach(f => fields.appendChild(OK.fieldEditor(f, cfg[f.key], child, "task")));
-    }
-    row1.querySelector("#t-child").addEventListener("change", fillModules); modSel.addEventListener("change", fillFields); fillModules();
-    addBtn.addEventListener("click", () => {
-      const m = OK.modules[modSel.value]; if (!m) return; const cfg = {}; let emptyList = false; (m.schema || []).forEach(f => { const v = OK.readField(f, fields); if (v !== undefined) cfg[f.key] = v; if ((f.type === "lists" || f.type === "packs") && Array.isArray(v) && !v.length) emptyList = true; });
-      if (emptyList) { OK.toast("Kies eerst welke lijst(en) de opdracht omvat.", true); return; }
-      S().tasks.push({ id: OK.uid(), child: row1.querySelector("#t-child").value, module: m.id, config: cfg, mode: "practice", count: +row2.querySelector("#t-count").value, due: row2.querySelector("#t-due").value || null, bonus: +row2.querySelector("#t-bonus").value || 0, status: "open", created: OK.nowISO() });
-      OK.save(); msg.textContent = "Opdracht staat klaar."; renderTasks();
-    });
+    /* één manier om een opdracht te maken: dezelfde stappen als op het overzicht (kind, oefening, instellingen, wanneer) */
+    box.appendChild(el("h3", null, "Nieuwe opdracht"));
+    box.appendChild(el("p", "muted small", "Een opdracht verschijnt bovenaan op het startscherm van het kind. Afwerken levert de bonus op; jij ziet of het gekend is."));
+    const add = el("button", "btn big wide", "Opdracht klaarzetten"); add.type = "button"; add.addEventListener("click", () => OK.openWizard(null, { task: true })); box.appendChild(add);
     box.appendChild(el("h3", null, "Open opdrachten"));
     const open = el("div", "list"); const openT = S().tasks.filter(t => t.status === "open");
     if (!openT.length) open.appendChild(el("p", "muted small", "Geen open opdrachten."));
