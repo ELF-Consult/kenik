@@ -512,10 +512,10 @@ table.review .x{background:transparent;color:var(--fg2);font-size:18px;min-width
 .garden .c1{left:8%;top:22px;width:90px;height:30px}.garden .c1::before{left:16px;top:-16px;width:40px;height:40px}.garden .c1::after{left:44px;top:-10px;width:32px;height:32px}
 .garden .c2{left:45%;top:40px;width:70px;height:24px}.garden .c2::before{left:12px;top:-12px;width:30px;height:30px}.garden .c2::after{left:34px;top:-8px;width:26px;height:26px}
 .garden.space .cloud{display:none}
-.grow{position:absolute;left:0;right:0;bottom:50px;height:120px;display:flex;align-items:flex-end;justify-content:center;gap:2%;padding:0 3%}
-.grow .g{width:7%;max-width:56px;min-width:26px;transform-origin:50% 100%;animation:grow .7s cubic-bezier(.3,1.6,.5,1) both}
-.grow .g.seed{animation:none;opacity:.3;transform:scale(.5)}
-.grow .g svg{width:100%;display:block}
+.garden .grow{position:absolute;left:0;right:0;bottom:50px;height:120px;display:flex;align-items:flex-end;justify-content:center;gap:2%;padding:0 3%}
+.garden .grow .g{width:7%;max-width:56px;min-width:26px;transform-origin:50% 100%;animation:grow .7s cubic-bezier(.3,1.6,.5,1) both}
+.garden .grow .g.seed{animation:none;opacity:.3;transform:scale(.5)}
+.garden .grow .g svg{width:100%;display:block}
 @keyframes grow{from{transform:scale(0)}to{transform:scale(1)}}
 .friends{position:absolute;left:0;right:0;bottom:4px;height:70px;display:flex;align-items:flex-end;gap:0;padding:0 10px;overflow:hidden}
 .friends .fr{width:70px;height:70px;flex:0 0 auto;animation:hop 1.6s ease-in-out infinite;transform-origin:50% 100%}
