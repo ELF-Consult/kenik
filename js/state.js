@@ -45,31 +45,20 @@ window.OK = window.OK || {};
   OK.resetAll = function (signOut) { S = fresh(); seed(S); OK.save(); if (signOut !== false) { try { localStorage.removeItem("kenik_session"); } catch (e) { } } };
 
   function migrate(s) {
+    /* voorbeeldlijsten bestaan niet meer: ze verwarden meer dan ze hielpen */
+    const exIds = new Set((s.lists || []).filter(l => l.example).map(l => l.id));
+    if (exIds.size) { s.lists = s.lists.filter(l => !exIds.has(l.id) && !/^ex-/.test(l.id)); s.tasks = (s.tasks || []).filter(t => !((t.config && t.config.lists) || []).some(id => exIds.has(id))); }
     /* Franse werkwoorden: van losse werkwoorden per kind naar soorten (groepen). De oude keuze bepaalt welke soorten aan gaan. */
     (s.children || []).forEach(c => { const m = c.modules && c.modules["frans-werkwoorden"]; if (m && OK.normalizeVerbCfg) { if (!m.groups && !m.picked && Array.isArray(m.verbs)) m.picked = true; OK.normalizeVerbCfg(m); } });
     const f = fresh();
     Object.keys(f).forEach(k => { if (s[k] === undefined) s[k] = f[k]; });
     Object.keys(f.settings).forEach(k => { if (s.settings[k] === undefined) s.settings[k] = f.settings[k]; });
-    const oldFr = s.lists.find(l => l.id === "ex-frans"); if (oldFr && !oldFr.v3) { const f = fresh(); seed(f); const nf = f.lists.find(l => l.id === "ex-frans"); Object.assign(oldFr, nf, { children: oldFr.children }); }
-    if (!s.lists.some(l => l.id === "ex-engels")) { const f = fresh(); seed(f); s.lists.push(f.lists.find(l => l.id === "ex-engels")); }
     /* elk kind heeft coins én een wereld (theme.variant: hondjes, katjes, ridders, ...); garden telt de groei-items en de verzamelde vriendjes */
     s.children.forEach(c => { c.modules = c.modules || {}; c.theme = { style: "kist", variant: (c.theme && c.theme.variant) || "hondjes" }; c.garden = c.garden || { flowers: 0, collected: [] }; c.points = c.points || 0; c.streak = c.streak || 0; c.best = c.best || 0; });
   }
 
-  /* Voorbeeldinhoud, duidelijk als voorbeeld gemarkeerd. */
+  /* Startinhoud: enkel een paar beloningen voor de winkel; lijsten maakt de ouder zelf. */
   function seed(s) {
-    s.lists.push({
-      id: "ex-frans", name: "Voorbeeld Frans: eerste woordjes", subject: "Frans", lang: "fr", children: "all", example: true, v3: true,
-      items: [["hallo, goeiedag", "bonjour"], ["dank je", "merci"], ["ja", "oui"], ["nee", "non"], ["de hond", "le chien"], ["de kat", "le chat"], ["het huis", "la maison"], ["de school", "l'école"], ["rood", "rouge"], ["blauw", "bleu"], ["één", "un"], ["twee", "deux"], ["drie", "trois"]]
-    });
-    s.lists.push({
-      id: "ex-engels", name: "Voorbeeld Engels: eerste woordjes", subject: "Engels", lang: "en", children: "all", example: true,
-      items: [["hallo", "hello"], ["dank je", "thank you"], ["ja", "yes"], ["nee", "no"], ["de hond", "the dog"], ["de kat", "the cat"], ["het huis", "the house"], ["de school", "the school"], ["rood", "red"], ["blauw", "blue"], ["één", "one"], ["twee", "two"], ["drie", "three"]]
-    });
-    s.lists.push({
-      id: "ex-wo", name: "Voorbeeld WO: hoofdsteden van de buurlanden", subject: "Wereldoriëntatie", lang: "nl", children: "all", example: true,
-      items: [["Frankrijk", "Parijs"], ["Nederland", "Amsterdam"], ["Duitsland", "Berlijn"], ["Luxemburg", "Luxemburg"], ["Verenigd Koninkrijk", "Londen"]]
-    });
     s.rewards.push(
       { id: OK.uid(), name: "Een ijsje of snoepje", cost: 100, children: "all" },
       { id: OK.uid(), name: "Half uur langer opblijven", cost: 150, children: "all" },
